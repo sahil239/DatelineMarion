@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:local="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/toolbar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:animateLayoutChanges="true"
+    android:background="#38000000"
+    local:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+    local:theme="@style/AppTheme">
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/opendrawer"
+            android:src="@android:drawable/ic_menu_add"/>
+
+        <TextView
+            android:layout_marginLeft="15dp"
+            android:textSize="17.5dp"
+            android:layout_centerVertical="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:layout_toRightOf="@+id/opendrawer"/>
+
+        <ImageView
+            android:layout_centerVertical="true"
+            android:layout_marginRight="15dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/refreshortop"
+            android:layout_alignParentRight="true"
+            android:src="@android:drawable/ic_popup_sync"/>
+    </RelativeLayout>
+
+
+</android.support.v7.widget.Toolbar>

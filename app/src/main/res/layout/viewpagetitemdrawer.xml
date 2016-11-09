@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+    <RelativeLayout
+        android:id="@+id/top"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp"
+            android:layout_marginRight="25dp"
+            android:layout_toLeftOf="@+id/bookmarks"
+            android:id="@+id/all_news"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/sym_action_call"/>
+
+        <ImageView
+            android:layout_centerInParent="true"
+            android:id="@+id/bookmarks"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/button_onoff_indicator_on"/>
+
+        <ImageView
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp"
+            android:layout_marginLeft="25dp"
+            android:layout_toRightOf="@+id/bookmarks"
+            android:id="@+id/unread"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_rew"/>
+    </RelativeLayout>
+
+    <View
+        android:id="@+id/view_dot"
+        android:layout_below="@+id/top"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@drawable/dotted_line"></View>
+    <TextView
+        android:id="@+id/nightmode"
+        android:text="Night mode (ON/OFF)"
+        android:textSize="25dp"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+     android:layout_alignParentBottom="true"/>
+
+    <ScrollView
+        android:layout_above="@+id/nightmode"
+        android:layout_below="@+id/view_dot"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+
+        <LinearLayout
+            android:id="@+id/linearCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        </LinearLayout>
+
+    </ScrollView>
+
+
+</RelativeLayout>
