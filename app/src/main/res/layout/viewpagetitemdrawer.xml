@@ -17,14 +17,14 @@
             android:id="@+id/all_news"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/sym_action_call"/>
+            android:src="@drawable/news"/>
 
         <ImageView
             android:layout_centerInParent="true"
             android:id="@+id/bookmarks"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/button_onoff_indicator_on"/>
+            android:src="@drawable/news"/>
 
         <ImageView
             android:layout_marginTop="15dp"
@@ -34,7 +34,7 @@
             android:id="@+id/unread"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_rew"/>
+            android:src="@drawable/news"/>
     </RelativeLayout>
 
     <View

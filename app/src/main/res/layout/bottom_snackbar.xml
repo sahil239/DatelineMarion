@@ -14,11 +14,12 @@
         android:gravity="center"
         android:layout_height="match_parent">
         <ImageView
+            android:src="@drawable/bookmark"
             android:id="@+id/option_one"
             android:layout_width="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_height="wrap_content"
-            android:src="@drawable/pure_blue_bookmark"/>
+          />
     </LinearLayout>
 
     <LinearLayout
@@ -33,7 +34,8 @@
             android:id="@+id/option_two"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/button_onoff_indicator_on"/>
+            android:src="@drawable/bookmark"
+            />
 
     </LinearLayout>
     <LinearLayout
@@ -45,9 +47,10 @@
         <ImageView
             android:layout_gravity="center_vertical"
             android:id="@+id/option_three"
+            android:src="@drawable/bookmark"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/share"/>
+           />
 
     </LinearLayout>
 
