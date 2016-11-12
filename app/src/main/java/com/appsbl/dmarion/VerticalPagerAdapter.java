@@ -32,17 +32,12 @@ import java.io.InputStream;
 
 public class VerticalPagerAdapter extends PagerAdapter {
 
-    private Context mContext;
-    private int mParent;
-    private int mChilds;
-    private Activity mActivity;
-    private JSONArray mColors;
 
-    public VerticalPagerAdapter(Activity activity,Context c, int parent, int childs){
+    private Activity mActivity;
+
+    public VerticalPagerAdapter(Activity activity){
         mActivity = activity;
-        mContext = c;
-        mParent = parent;
-        mChilds = childs;
+
     }
 
     public int getItemPosition(Object object) {
@@ -51,7 +46,7 @@ public class VerticalPagerAdapter extends PagerAdapter {
 
     @Override
     public int getCount() {
-        return mChilds;
+        return Constants.newsArrayList.size();
     }
 
     @Override
@@ -67,12 +62,12 @@ public class VerticalPagerAdapter extends PagerAdapter {
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
 
-        LayoutInflater layoutInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater layoutInflater = (LayoutInflater) mActivity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View view =  layoutInflater.inflate(R.layout.viewpagetitem,null);
 
         ImageView imageView = (ImageView)view.findViewById(R.id.imageView);
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                mContext.getResources().getDisplayMetrics().widthPixels*75/100);
+                mActivity.getResources().getDisplayMetrics().widthPixels*75/100);
         layoutParams.gravity = Gravity.CENTER;
         imageView.setLayoutParams(layoutParams);
 
@@ -114,7 +109,7 @@ public class VerticalPagerAdapter extends PagerAdapter {
             }
         });
 
-        Glide.with(mContext)
+        Glide.with(mActivity)
                 .load(generalNewsBean.getData().getImage_url())
                 .into(imageView);
 

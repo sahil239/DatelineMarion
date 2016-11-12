@@ -72,6 +72,7 @@ public class NewsModel {
         }
 
         public static class DataBean {
+            private String article_id;
             private String category_name;
             private String title;
             private String description;
@@ -80,6 +81,7 @@ public class NewsModel {
             private String pubDate;
             private String localImage;
             private String startFromHere ;
+
 
             public String getLocalImage() {
                 return localImage;
@@ -91,6 +93,14 @@ public class NewsModel {
 
             public String getStartFromHere() {
                 return startFromHere;
+            }
+
+            public String getArticle_id() {
+                return article_id;
+            }
+
+            public void setArticle_id(String article_id) {
+                this.article_id = article_id;
             }
 
             public void setStartFromHere(String startFromHere) {

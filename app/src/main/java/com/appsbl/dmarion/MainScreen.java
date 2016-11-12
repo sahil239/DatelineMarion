@@ -8,7 +8,11 @@ import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -25,15 +29,15 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.androidadvance.topsnackbar.TSnackbar;
+import com.appsbl.dmarion.fragments.CustomWebFragment;
+import com.appsbl.dmarion.fragments.DrawerFragment;
+import com.appsbl.dmarion.fragments.VerticalPagerFragment;
 import com.appsbl.dmarion.model.NewsModel;
-import com.emoiluj.doubleviewpager.DoubleViewPager;
-import com.emoiluj.doubleviewpager.DoubleViewPagerAdapter;
-import com.emoiluj.doubleviewpager.HorizontalViewPager;
-import com.emoiluj.doubleviewpager.VerticalViewPager;
 import com.google.gson.Gson;
 
 import org.json.JSONObject;
@@ -47,19 +51,19 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainScreen extends AppCompatActivity {
 
-    public static DoubleViewPager viewpager;
+    public static ViewPager viewpager;
     File SDCardRoot = Environment.getExternalStorageDirectory();
     File folder = new File(SDCardRoot+Constants.dataFilePath);
-    public static DoubleViewPagerAdapter doubleViewPagerAdapter;
     public static Snackbar snackbar;
-    public static TSnackbar tSnackbar;
-    LinearLayout linear;
+    RelativeLayout linear;
     public  static Toolbar toolbar;
 
     public static ImageView refreshortop;
+    ImageView opendrawer;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,15 +71,29 @@ public class MainScreen extends AppCompatActivity {
 
         toolbar = (Toolbar)findViewById(R.id.toolbar);
         refreshortop = (ImageView)findViewById(R.id.refreshortop);
+        opendrawer = (ImageView)findViewById(R.id.opendrawer);
 
+        opendrawer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                viewpager.setCurrentItem(0);
+            }
+        });
         refreshortop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
+                if(VerticalPagerFragment.infiniteViewPager.getCurrentPage() == 0){
+
+                }else{
+                    VerticalPagerFragment.infiniteViewPager.snapToPage(0);
+                }
 
 
             }
         });
+
+
        // setSupportActionBar(toolbar);
 
        // getSupportActionBar().setShowHideAnimationEnabled(false);
@@ -83,35 +101,6 @@ public class MainScreen extends AppCompatActivity {
         openOrCreateDatabase();
         fetchDataFromSqlite();
         loadUI();
-    }
-
-    void topSnackbar(){
-
-        tSnackbar = TSnackbar.make(linear, "", TSnackbar.LENGTH_INDEFINITE);
-// Get the Snackbar's layout view
-        TSnackbar.SnackbarLayout layout = (TSnackbar.SnackbarLayout) tSnackbar.getView();
-// Hide the text
-
-        layout.setBackgroundColor(Color.TRANSPARENT);
-      /*  TextView textView = (TextView) layout.findViewById(android.support.design.R.id.snackbar_text);
-        textView.setVisibility(View.INVISIBLE);*/
-
-// Inflate our custom view
-        View snackView = getLayoutInflater().inflate(R.layout.bottom_snackbar, null);
-
-
-        layout.setPadding(0, 0, 0, 0); //set padding to 0
-
-        layout.setBackgroundColor(Color.parseColor("#38000000"));
-
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-        layout.setLayoutParams(layoutParams);
-        snackView.setLayoutParams(layout.getLayoutParams());
-
-        ((ImageView)snackView.findViewById(R.id.option_two)).setImageResource(android.R.drawable.ic_dialog_alert);
-        layout.addView(snackView, 0);
-// Show the Snackbar
-        tSnackbar.show();
     }
 
     void bottomSnackBar(){
@@ -143,14 +132,18 @@ public class MainScreen extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                tSnackbar.dismiss();
+
             }
         });
 
         ((ImageView)snackView.findViewById(R.id.option_two)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                tSnackbar.show();
+
+                int count = VerticalPagerFragment.infiniteViewPager.getCurrentPage();
+                NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(count).getData();
+                Constants.shareOptions(MainScreen.this,dataBean.getDetail_description_url(),dataBean.getTitle());
+
             }
         });
         layout.addView(snackView, 0);
@@ -228,7 +221,7 @@ public class MainScreen extends AppCompatActivity {
             // action with ID action_refresh was selected
             case R.id.action_refresh:
 
-                new BackGroundTask(Constants.newsUrl).execute();
+              //  new BackGroundTask(Constants.newsUrl).execute();
                 Toast.makeText(this, "Refresh selected", Toast.LENGTH_SHORT)
                         .show();
                 break;
@@ -243,63 +236,31 @@ public class MainScreen extends AppCompatActivity {
 
     private void loadUI() {
 
-        ArrayList<PagerAdapter> verticalAdapters = new ArrayList<PagerAdapter>();
-        generateVerticalAdapters(verticalAdapters);
-
-        VerticalViewPager.OnPageChangeListener onPageChangeListener = new VerticalViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-
-                if(position == 0){
-                    refreshortop.setImageDrawable(getResources().getDrawable(android.R.drawable.ic_popup_sync));
-                }else{
-                    refreshortop.setImageDrawable(getResources().getDrawable(android.R.drawable.arrow_up_float));
-
-                }
-
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        };
-
-        doubleViewPagerAdapter = new DoubleViewPagerAdapter(getApplicationContext(), verticalAdapters,onPageChangeListener);
-
-        linear = (LinearLayout)findViewById(R.id.linear);
+        linear = (RelativeLayout) findViewById(R.id.linear);
         bottomSnackBar();
        // topSnackbar();
 
-        viewpager = (DoubleViewPager) findViewById(R.id.pager);
-        viewpager.setAdapter(doubleViewPagerAdapter);
+        List<Fragment> fragments = getFragments();
+
+        viewpager = (ViewPager) findViewById(R.id.pager);
+        viewpager.setAdapter(new MyPageAdapter(getSupportFragmentManager(),fragments));
         viewpager.setCurrentItem(1);
 
-
-
-        viewpager.setOnPageChangeListener(new HorizontalViewPager.OnPageChangeListener() {
+        viewpager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
 
             }
 
             @Override
             public void onPageSelected(int position) {
 
-                if(position == 0){
+                if(position == 0 || position == 2){
                     snackbar.dismiss();
-                    MainScreen.toolbar.animate().translationY(-MainScreen.toolbar.getHeight()).setInterpolator(new AccelerateInterpolator(2)).start();
-
+                    toolbar.animate().translationY(-MainScreen.toolbar.getHeight()).setInterpolator(new AccelerateInterpolator(2)).start();
                 }else{
-                    MainScreen.snackbar.show();
-                    MainScreen.toolbar.animate().translationY(0).setInterpolator(new DecelerateInterpolator(2)).start();
-
+                    snackbar.show();
+                    toolbar.animate().translationY(0).setInterpolator(new DecelerateInterpolator(2)).start();
                 }
             }
 
@@ -308,88 +269,62 @@ public class MainScreen extends AppCompatActivity {
 
             }
         });
+
+
     }
 
-    private void generateVerticalAdapters(ArrayList<PagerAdapter> verticalAdapters) {
-        for (int i=0; i<2; i++){
-            if(i == 1){
-                verticalAdapters.add(new VerticalPagerAdapter(MainScreen.this,this, i, Constants.newsArrayList.size()));
-            }/*else if(i == 2){
-                verticalAdapters.add(new DrawerAdapter(MainScreen.this,this, 2, 1,false));
-            }*/else{
-                verticalAdapters.add(new DrawerAdapter(MainScreen.this,this, 0, 1,true));
-            }
 
-        }
+    private List<Fragment> getFragments(){
+
+        List<Fragment> fList = new ArrayList<Fragment>();
+
+
+
+        fList.add(DrawerFragment.newInstance("Fragment 1"));
+
+        fList.add(VerticalPagerFragment.newInstance("Fragment 2"));
+
+        fList.add(CustomWebFragment.newInstance("Fragment 3"));
+
+
+
+        return fList;
+
     }
 
-    public String loadJSONFromAsset(String path) {
-        String json = null;
-        try {
 
-            InputStream is = new FileInputStream(path);
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            json = new String(buffer, "UTF-8");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
-        return json;
-    }
+    class MyPageAdapter extends FragmentPagerAdapter {
 
-    class BackGroundTask extends AsyncTask {
+        private List<Fragment> fragments;
 
-        String fileToDownload;
 
-        public BackGroundTask(String fileToDownload) {
-            this.fileToDownload = fileToDownload;
-        }
+        public MyPageAdapter(FragmentManager fm, List<Fragment> fragments) {
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
+            super(fm);
+
+            this.fragments = fragments;
 
         }
 
         @Override
-        protected Object doInBackground(Object[] params) {
 
+        public Fragment getItem(int position) {
 
+            return this.fragments.get(position);
 
-            downloadFile(fileToDownload);
-
-            return null;
         }
+
 
         @Override
-        protected void onPostExecute(Object o) {
-            super.onPostExecute(o);
 
-                try {
+        public int getCount() {
 
-                    Log.d("Constants.newsArrayList",folder.getAbsolutePath());
-                    JSONObject obj = new JSONObject(loadJSONFromAsset(folder.getAbsolutePath()+"/"+Constants.newsFile));
-                    Gson gson = new Gson();
-                    NewsModel dataModel = gson.fromJson(obj.toString(),NewsModel.class);
-                    Constants.newsArrayList = dataModel.getGeneral_news();
-
-                    store();
-                    fetchDataFromSqlite();
-                    loadUI();
-
-                    Log.d("Constants.newsArrayList",Constants.newsArrayList.size()+" size of list");
-
-                } catch (Exception e) {
-                    Log.d("Constants.newsArrayList",e.getMessage());
-                    e.printStackTrace();
-                }
-
+            return this.fragments.size();
 
         }
+
     }
+
 
     public void store() {
 

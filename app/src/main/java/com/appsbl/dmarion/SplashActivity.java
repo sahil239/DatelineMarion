@@ -4,10 +4,13 @@ import android.Manifest;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -21,10 +24,12 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.appsbl.dmarion.api.ApiClient;
+import com.appsbl.dmarion.api.ApiInterface;
+import com.appsbl.dmarion.model.CheckNewsModel;
+import com.appsbl.dmarion.model.LeftPanel;
 import com.appsbl.dmarion.model.NewsModel;
 import com.google.gson.Gson;
-
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,6 +39,11 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
 
 public class SplashActivity extends AppCompatActivity {
 
@@ -47,20 +57,32 @@ public class SplashActivity extends AppCompatActivity {
     File SDCardRoot = Environment.getExternalStorageDirectory();
     File folder = new File(SDCardRoot+Constants.dataFilePath);
 
+    SharedPreferences sharedPreferences;
+    SharedPreferences.Editor  editor;
+    String lastData = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(SplashActivity.this);
+        editor = sharedPreferences.edit();
+
         openOrCreateDatabase();
+        fetchDataFromSqlite(Constants.newsTable);
         activity_splash = (RelativeLayout)findViewById(R.id.activity_splash);
 
         if(checkPermission()){
-            new BackGroundTask(Constants.newsUrl).execute();
+
+            new GetLeftPanel().execute();
+
         }else{
             requestPermission();
         }
     }
+
+
 
     void openOrCreateDatabase(){
 
@@ -73,6 +95,39 @@ public class SplashActivity extends AppCompatActivity {
                 ", localImage text" +
                 ", startFromHere text)");
 
+    }
+
+    void fetchDataFromSqlite(String tableName){
+
+        SQLiteDatabase database = openOrCreateDatabase(Constants.databaseName, MODE_PRIVATE, null);
+
+        Constants.newsArrayList.clear();
+        if (database != null) {
+
+            Cursor cursor  = database.rawQuery("select * from '" + tableName + "'", null);
+
+
+            if (cursor.getCount() > 0) {
+
+                cursor.moveToFirst();
+                do {
+
+                    Log.d("cursor",cursor.getColumnNames()[0]);
+
+                    lastData = cursor.getString(cursor.getColumnIndex("article_id"));
+                    break;
+
+                } while (cursor.moveToNext());
+
+                Toast.makeText(SplashActivity.this, "List is Populated..."+Constants.newsArrayList.size(), Toast.LENGTH_SHORT).show();
+
+            } else {
+
+                lastData = "";
+                Toast.makeText(SplashActivity.this, "List is Empty...", Toast.LENGTH_SHORT).show();
+
+            }
+        }
     }
 
     public String loadJSONFromAsset(String path) {
@@ -92,65 +147,6 @@ public class SplashActivity extends AppCompatActivity {
         return json;
     }
 
-    class BackGroundTask extends AsyncTask{
-
-        String fileToDownload;
-
-        public BackGroundTask(String fileToDownload) {
-            this.fileToDownload = fileToDownload;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-          //  showProgress(fileToDownload);
-        }
-
-        @Override
-        protected Object doInBackground(Object[] params) {
-
-
-
-           downloadFile(fileToDownload);
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Object o) {
-            super.onPostExecute(o);
-
-         //   dialog.dismiss();
-
-            if(fileToDownload.equals(Constants.newsUrl)){
-                try {
-
-                    Log.d("Constants.newsArrayList",folder.getAbsolutePath());
-                    JSONObject obj = new JSONObject(loadJSONFromAsset(folder.getAbsolutePath()+"/"+Constants.newsFile));
-                    Gson gson = new Gson();
-                    NewsModel dataModel = gson.fromJson(obj.toString(),NewsModel.class);
-                    Constants.newsArrayList = dataModel.getGeneral_news();
-
-                    Log.d("Constants.newsArrayList",Constants.newsArrayList.size()+" size of list");
-
-                } catch (Exception e) {
-                    Log.d("Constants.newsArrayList",e.getMessage());
-                    e.printStackTrace();
-                }
-                new BackGroundTask(Constants.leftPanelUrl).execute();
-            }else{
-
-                Toast.makeText(SplashActivity.this, "Data updated", Toast.LENGTH_LONG).show();
-
-                store();
-                Intent intent = new Intent(SplashActivity.this,MainScreen.class);
-                startActivity(intent);
-                finish();
-                overridePendingTransition(R.anim.slide_in_right,R.anim.slide_out_left);
-            }
-        }
-    }
 
     void downloadFile(String dwnload_file_path){
 
@@ -281,7 +277,9 @@ public class SplashActivity extends AppCompatActivity {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                     //  Snackbar.make(rel, "Permission Granted.", Snackbar.LENGTH_LONG).show();
-                    new BackGroundTask(Constants.newsUrl).execute();
+                   // new BackGroundTask(Constants.newsUrl).execute();
+
+                    new CheckData().execute();
 
                 } else {
 
@@ -298,14 +296,175 @@ public class SplashActivity extends AppCompatActivity {
         }
     }
 
+    class CheckData extends AsyncTask{
+
+        Retrofit retrofit;
+        ApiInterface restInterface;
+        CheckNewsModel checkNewsModel;
+
+
+        Call<CheckNewsModel> callback;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+
+            retrofit = ApiClient.getClient();
+            restInterface = retrofit.create(ApiInterface.class);        }
+
+        @Override
+        protected Object doInBackground(Object[] params) {
+
+            callback = restInterface.checkToUpdate();
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            super.onPostExecute(o);
+
+            callback.enqueue(new Callback<CheckNewsModel>() {
+                @Override
+                public void onResponse(Call<CheckNewsModel> call, Response<CheckNewsModel> response) {
+
+                    checkNewsModel = response.body();
+
+                    if(lastData.equals(checkNewsModel.getSetting_info().getLast_updated_id())){
+                        Toast.makeText(getApplicationContext(), "Match...", Toast.LENGTH_SHORT).show();
+
+                    }else{
+                        Toast.makeText(getApplicationContext(), "Does not match...", Toast.LENGTH_SHORT).show();
+
+                    }
+
+
+                }
+
+                @Override
+                public void onFailure(Call<CheckNewsModel> call, Throwable t) {
+                    Toast.makeText(getApplicationContext(), "Does not match..."+t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        }
+    }
+
+    class GetNews extends AsyncTask{
+
+        Retrofit retrofit;
+        ApiInterface restInterface;
+        NewsModel checkNewsModel;
+
+
+        Call<NewsModel> callback;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+
+            retrofit = ApiClient.getClient();
+            restInterface = retrofit.create(ApiInterface.class);        }
+
+        @Override
+        protected Object doInBackground(Object[] params) {
+
+            callback = restInterface.fetchGeneralNews();
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            super.onPostExecute(o);
+
+            callback.enqueue(new Callback<NewsModel>() {
+                @Override
+                public void onResponse(Call<NewsModel> call, Response<NewsModel> response) {
+
+                    checkNewsModel = response.body();
+
+                    if(checkNewsModel.getStatus().equals("success")) {
+                        Constants.newsArrayList.addAll(checkNewsModel.getGeneral_news());
+                        store();
+
+                        Intent intent  = new Intent(SplashActivity.this,MainScreen.class);
+                        startActivity(intent);
+                        finish();
+                        overridePendingTransition(R.anim.slide_in_right,R.anim.slide_out_left);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<NewsModel> call, Throwable t) {
+                    Toast.makeText(getApplicationContext(), "Does not match..."+t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        }
+    }
+
+    class GetLeftPanel extends AsyncTask{
+
+        Retrofit retrofit;
+        ApiInterface restInterface;
+        LeftPanel leftPanel;
+
+
+        Call<LeftPanel> callback;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+
+            retrofit = ApiClient.getClient();
+            restInterface = retrofit.create(ApiInterface.class);        }
+
+        @Override
+        protected Object doInBackground(Object[] params) {
+
+            callback = restInterface.leftPanel();
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            super.onPostExecute(o);
+
+            callback.enqueue(new Callback<LeftPanel>() {
+                @Override
+                public void onResponse(Call<LeftPanel> call, Response<LeftPanel> response) {
+
+                    leftPanel = response.body();
+
+                    if(leftPanel.getStatus().equals("success")) {
+
+                        editor.putString("leftPanel",new Gson().toJson(leftPanel));
+                        editor.commit();
+                    }
+
+                    new GetNews().execute();
+                }
+
+                @Override
+                public void onFailure(Call<LeftPanel> call, Throwable t) {
+                    Toast.makeText(getApplicationContext(), "Does not match..."+t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        }
+    }
+
     public void store() {
 
         if (database != null) {
 
             database.execSQL("DROP TABLE IF EXISTS '" + Constants.newsTable + "'");
 
-            database.execSQL("create table if not exists "+Constants.newsTable +"(category_name text," +
-                    " title text" +
+            database.execSQL("create table if not exists "+Constants.newsTable +"(category_name text" +
+                    ", article_id text" +
+                    ", title text" +
                     ", description text" +
                     ", image_url text" +
                     ", detail_description_url text" +
@@ -316,6 +475,7 @@ public class SplashActivity extends AppCompatActivity {
             for(int i = 0 ; i < Constants.newsArrayList.size(); i++){
 
                 ContentValues contentValues = new ContentValues();
+                contentValues.put("article_id", Constants.newsArrayList.get(i).getData().getArticle_id());
                 contentValues.put("category_name", Constants.newsArrayList.get(i).getData().getCategory_name());
                 contentValues.put("description", Constants.newsArrayList.get(i).getData().getDescription());
                 contentValues.put("title", Constants.newsArrayList.get(i).getData().getTitle());
@@ -334,6 +494,70 @@ public class SplashActivity extends AppCompatActivity {
         }
 
     }
+
+/*
+
+    class BackGroundTask extends AsyncTask{
+
+        String fileToDownload;
+
+        public BackGroundTask(String fileToDownload) {
+            this.fileToDownload = fileToDownload;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            //  showProgress(fileToDownload);
+        }
+
+        @Override
+        protected Object doInBackground(Object[] params) {
+
+
+
+            downloadFile(fileToDownload);
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            super.onPostExecute(o);
+
+            //   dialog.dismiss();
+
+            if(fileToDownload.equals(Constants.newsUrl)){
+                try {
+
+                    Log.d("Constants.newsArrayList",folder.getAbsolutePath());
+                    JSONObject obj = new JSONObject(loadJSONFromAsset(folder.getAbsolutePath()+"/"+Constants.newsFile));
+                    Gson gson = new Gson();
+                    NewsModel dataModel = gson.fromJson(obj.toString(),NewsModel.class);
+                    Constants.newsArrayList = dataModel.getGeneral_news();
+
+                    Log.d("Constants.newsArrayList",Constants.newsArrayList.size()+" size of list");
+
+                } catch (Exception e) {
+                    Log.d("Constants.newsArrayList",e.getMessage());
+                    e.printStackTrace();
+                }
+                new BackGroundTask(Constants.leftPanelUrl).execute();
+            }else{
+
+                Toast.makeText(SplashActivity.this, "Data updated", Toast.LENGTH_LONG).show();
+
+                store();
+                Intent intent = new Intent(SplashActivity.this,MainScreen.class);
+                startActivity(intent);
+                finish();
+                overridePendingTransition(R.anim.slide_in_right,R.anim.slide_out_left);
+            }
+        }
+    }
+*/
+
 
 }
 

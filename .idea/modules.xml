@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/DatelineMarion.iml" filepath="$PROJECT_DIR$/DatelineMarion.iml" />
-      <module fileurl="file://$PROJECT_DIR$/DoubleViewPager/DoubleViewPager.iml" filepath="$PROJECT_DIR$/DoubleViewPager/DoubleViewPager.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

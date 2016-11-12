@@ -13,15 +13,24 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:uiOptions="splitActionBarWhenNarrow">
-        <activity android:name=".SplashActivity">
+        <activity
+            android:name=".SplashActivity"
+            android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".MainScreen"></activity>
+        <activity
+            android:name=".MainScreen"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".SettingsActivity"
+            android:theme="@style/AppTheme"></activity>
+        <activity
+            android:name=".WebpageFromSetting"
+            android:theme="@style/AppTheme"></activity>
     </application>
 
 </manifest>

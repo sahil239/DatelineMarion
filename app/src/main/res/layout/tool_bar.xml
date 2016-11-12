@@ -6,6 +6,8 @@
     android:layout_height="wrap_content"
     android:animateLayoutChanges="true"
     android:background="#38000000"
+    android:paddingTop="7.5dp"
+    android:paddingBottom="7.5dp"
     local:popupTheme="@style/ThemeOverlay.AppCompat.Light"
     local:theme="@style/AppTheme">
 
@@ -18,7 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/opendrawer"
-            android:src="@android:drawable/ic_menu_add"/>
+            android:src="@drawable/search_menu"/>
 
         <TextView
             android:layout_marginLeft="15dp"
@@ -36,8 +38,6 @@
             android:layout_height="wrap_content"
             android:id="@+id/refreshortop"
             android:layout_alignParentRight="true"
-            android:src="@android:drawable/ic_popup_sync"/>
+            android:src="@drawable/refress"/>
     </RelativeLayout>
-
-
 </android.support.v7.widget.Toolbar>

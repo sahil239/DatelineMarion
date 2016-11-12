@@ -1,3 +1,4 @@
+/*
 package com.appsbl.dmarion;
 
 import android.app.Activity;
@@ -213,12 +214,14 @@ public class DrawerAdapter extends PagerAdapter {
             webView.loadUrl(Constants.newsArrayList.get(MainScreen.viewpager.getCurrentItem()).getData().getDetail_description_url());
             webView.getSettings().setJavaScriptEnabled(true);
 
-           /* CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+           */
+/* CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
             builder.setStartAnimations(mActivity, R.anim.slide_in_right, R.anim.slide_out_left);
             builder.setExitAnimations(mActivity, R.anim.slide_in_left, R.anim.slide_out_right);
             builder.setToolbarColor(mActivity.getResources().getColor(R.color.colorPrimary));
             CustomTabsIntent customTabsIntent = builder.build();
-            customTabsIntent.launchUrl(mActivity, Uri.parse(""));*/
+            customTabsIntent.launchUrl(mActivity, Uri.parse(""));*//*
+
         }
         container.addView(view);
         return view;
@@ -248,14 +251,17 @@ public class DrawerAdapter extends PagerAdapter {
         for (int i=0; i<2; i++){
             if(i == 1){
                 verticalAdapters.add(new VerticalPagerAdapter(mActivity,mActivity, i, Constants.newsArrayList.size()));
-            }/*else if(i == 2){
+            }*/
+/*else if(i == 2){
                 verticalAdapters.add(new DrawerAdapter(MainScreen.this,this, 2, 1,false));
-            }*/else{
+            }*//*
+else{
                 verticalAdapters.add(new DrawerAdapter(mActivity,mActivity, 0, 1,true));
             }
 
         }
     }
+
     void fetchDataFromSqlite(String tableName,String category_name){
 
        SQLiteDatabase database = mActivity.openOrCreateDatabase(Constants.databaseName, mActivity.MODE_PRIVATE, null);
@@ -334,4 +340,4 @@ public class DrawerAdapter extends PagerAdapter {
     }
 
 
-}
+}*/

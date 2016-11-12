@@ -3,8 +3,31 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <RelativeLayout
+        android:padding="5dp"
+        android:id="@+id/top1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/arrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/arrow"
+            android:layout_marginRight="5dp"
+            android:layout_alignParentRight="true"/>
+
+        <ImageView
+            android:layout_marginRight="5dp"
+            android:id="@+id/setting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/setting"
+            android:layout_toLeftOf="@+id/arrow"/>
+    </RelativeLayout>
 
     <RelativeLayout
+        android:layout_below="@+id/top1"
         android:id="@+id/top"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -17,14 +40,14 @@
             android:id="@+id/all_news"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/news"/>
+            android:src="@drawable/all_news_tick"/>
 
         <ImageView
             android:layout_centerInParent="true"
             android:id="@+id/bookmarks"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/news"/>
+            android:src="@drawable/all_bookmark"/>
 
         <ImageView
             android:layout_marginTop="15dp"
@@ -34,7 +57,7 @@
             android:id="@+id/unread"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/news"/>
+            android:src="@drawable/all_read"/>
     </RelativeLayout>
 
     <View
@@ -68,6 +91,7 @@
         </LinearLayout>
 
     </ScrollView>
+
 
 
 </RelativeLayout>
