@@ -87,8 +87,18 @@ public class SplashActivity extends AppCompatActivity {
     void openOrCreateDatabase(){
 
         database = openOrCreateDatabase(Constants.databaseName, MODE_PRIVATE, null);
-        database.execSQL("create table if not exists "+Constants.newsTable +"(id  INTEGER PRIMARY KEY AUTOINCREMENT" +
-                ",category_name text, title text, description text" +
+        database.execSQL("create table if not exists "+Constants.newsTable +" (category_name text, title text, description text" +
+                ", image_url text" +
+                ", article_id text" +
+                ", detail_description_url text" +
+                ", pubDate text" +
+                ", localImage text" +
+                ", startFromHere text)");
+
+        database.execSQL("create table if not exists " + Constants.bookmarksTable + " (category_name text" +
+                ", article_id text" +
+                ", title text" +
+                ", description text" +
                 ", image_url text" +
                 ", detail_description_url text" +
                 ", pubDate text" +
@@ -112,19 +122,17 @@ public class SplashActivity extends AppCompatActivity {
                 cursor.moveToFirst();
                 do {
 
-                    Log.d("cursor",cursor.getColumnNames()[0]);
+                    Log.d("cursor",cursor.getString(cursor.getColumnIndex("article_id")));
 
                     lastData = cursor.getString(cursor.getColumnIndex("article_id"));
                     break;
 
                 } while (cursor.moveToNext());
 
-                Toast.makeText(SplashActivity.this, "List is Populated..."+Constants.newsArrayList.size(), Toast.LENGTH_SHORT).show();
 
             } else {
 
                 lastData = "";
-                Toast.makeText(SplashActivity.this, "List is Empty...", Toast.LENGTH_SHORT).show();
 
             }
         }
@@ -331,10 +339,16 @@ public class SplashActivity extends AppCompatActivity {
                     checkNewsModel = response.body();
 
                     if(lastData.equals(checkNewsModel.getSetting_info().getLast_updated_id())){
+                        Intent intent  = new Intent(SplashActivity.this,MainScreen.class);
+                        startActivity(intent);
+                        finish();
+                        overridePendingTransition(R.anim.slide_in_right,R.anim.slide_out_left);
                         Toast.makeText(getApplicationContext(), "Match...", Toast.LENGTH_SHORT).show();
 
                     }else{
-                        Toast.makeText(getApplicationContext(), "Does not match...", Toast.LENGTH_SHORT).show();
+
+                        new GetNews().execute();
+                        Toast.makeText(getApplicationContext(), "Updating Data. ..", Toast.LENGTH_SHORT).show();
 
                     }
 
@@ -444,7 +458,7 @@ public class SplashActivity extends AppCompatActivity {
                         editor.commit();
                     }
 
-                    new GetNews().execute();
+                    new CheckData().execute();
                 }
 
                 @Override
@@ -462,7 +476,7 @@ public class SplashActivity extends AppCompatActivity {
 
             database.execSQL("DROP TABLE IF EXISTS '" + Constants.newsTable + "'");
 
-            database.execSQL("create table if not exists "+Constants.newsTable +"(category_name text" +
+            database.execSQL("create table if not exists "+Constants.newsTable +" (category_name text" +
                     ", article_id text" +
                     ", title text" +
                     ", description text" +
@@ -474,6 +488,7 @@ public class SplashActivity extends AppCompatActivity {
 
             for(int i = 0 ; i < Constants.newsArrayList.size(); i++){
 
+                Log.d("trackArticleId>>",Constants.newsArrayList.get(i).getData().getArticle_id());
                 ContentValues contentValues = new ContentValues();
                 contentValues.put("article_id", Constants.newsArrayList.get(i).getData().getArticle_id());
                 contentValues.put("category_name", Constants.newsArrayList.get(i).getData().getCategory_name());

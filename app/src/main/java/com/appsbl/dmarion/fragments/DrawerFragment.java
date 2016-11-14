@@ -1,21 +1,27 @@
 package com.appsbl.dmarion.fragments;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.support.customtabs.CustomTabsIntent;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.PagerAdapter;
 import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.webkit.WebView;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
@@ -31,6 +37,7 @@ import com.appsbl.dmarion.SplashActivity;
 import com.appsbl.dmarion.VerticalPagerAdapter;
 import com.appsbl.dmarion.model.LeftPanel;
 import com.appsbl.dmarion.model.NewsModel;
+import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
 
 import org.json.JSONObject;
@@ -41,6 +48,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.appsbl.dmarion.MainScreen.bookmarksList;
 
 /**
  * Created by HP on 12-11-2016.
@@ -70,6 +79,7 @@ public class DrawerFragment extends Fragment {
     }
 
 
+    public static ImageView all_news,bookmarks,unread;
 
     @Override
 
@@ -84,10 +94,10 @@ public class DrawerFragment extends Fragment {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         editor = sharedPreferences.edit();
         LinearLayout linearCategory = (LinearLayout)view.findViewById(R.id.linearCategory);
-        final ImageView all_news = (ImageView)view.findViewById(R.id.all_news);
-        final ImageView bookmarks = (ImageView)view.findViewById(R.id.bookmarks);
-        final ImageView unread = (ImageView)view.findViewById(R.id.unread);
-        final ImageView settings = (ImageView)view.findViewById(R.id.setting);
+        all_news = (ImageView)view.findViewById(R.id.all_news);
+        bookmarks = (ImageView)view.findViewById(R.id.bookmarks);
+        unread = (ImageView)view.findViewById(R.id.unread);
+         ImageView settings = (ImageView)view.findViewById(R.id.setting);
         final ImageView arrow = (ImageView)view.findViewById(R.id.arrow);
 
         arrow.setOnClickListener(new View.OnClickListener() {
@@ -118,10 +128,11 @@ public class DrawerFragment extends Fragment {
         bookmarks.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                fetchBookMarkIds();
                 bookmarks.setImageResource(R.drawable.all_bookmark_tick);
                 all_news.setImageResource(R.drawable.all_news);
                 unread.setImageResource(R.drawable.all_read);
-             //   fetchDataFromSqlite(Constants.bookmarksTable,"");
+                fetchDataFromSqlite(Constants.bookmarksTable,"");
             }
         });
 
@@ -216,6 +227,7 @@ public class DrawerFragment extends Fragment {
         }
 
         TextView nightmode = (TextView) view.findViewById(R.id.nightmode);
+        nightmode.setVisibility(View.GONE);
         nightmode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -260,6 +272,27 @@ public class DrawerFragment extends Fragment {
         return json;
     }
 
+    void fetchBookMarkIds(){
+
+        SQLiteDatabase database = getActivity().openOrCreateDatabase(Constants.databaseName, getActivity().MODE_PRIVATE, null);
+
+        bookmarksList.clear();
+        if (database != null) {
+
+            Cursor cursor1 = database.rawQuery("select * from '" + Constants.bookmarksTable + "'", null);
+
+            if(cursor1.getCount() > 0){
+                cursor1.moveToFirst();
+                do{
+                    Log.d("cursor>>", cursor1.getString(cursor1.getColumnIndex("article_id")));
+                    bookmarksList.add(cursor1.getString(cursor1.getColumnIndex("article_id")));
+
+                }while (cursor1.moveToNext());
+
+            }
+        }
+    }
+
 
     void fetchDataFromSqlite(String tableName,String category_name){
 
@@ -287,6 +320,7 @@ public class DrawerFragment extends Fragment {
 
                     dataBean.setCategory_name(cursor.getString(cursor.getColumnIndex("category_name")));
                     dataBean.setTitle(cursor.getString(cursor.getColumnIndex("title")));
+                    dataBean.setArticle_id(cursor.getString(cursor.getColumnIndex("article_id")));
                     dataBean.setDescription(cursor.getString(cursor.getColumnIndex("description")));
                     dataBean.setDetail_description_url(cursor.getString(cursor.getColumnIndex("detail_description_url")));
                     dataBean.setImage_url(cursor.getString(cursor.getColumnIndex("image_url")));
@@ -301,17 +335,115 @@ public class DrawerFragment extends Fragment {
                 } while (cursor.moveToNext());
 
 
-             //   MainScreen.viewpager.setAdapter(MainScreen.doubleViewPagerAdapter);
+
+                VerticalPagerFragment.infiniteViewPager.removeAllViews();
+
+                for(int i = 0; i < Constants.newsArrayList.size();i++){
+
+                    VerticalPagerFragment.infiniteViewPager.addView(setInfiniteViewPager(i));
+
+                    NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(i).getData();
+
+                    if(i == 0){
+
+                        if(tableName.equals(Constants.bookmarksTable)){
+                            ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                                    setImageResource(R.drawable.bookmark_tick);
+                        }else{
+                        for(int j = 0 ; j < bookmarksList.size(); j++) {
+
+                            String id = bookmarksList.get(j);
+                            if (dataBean.getArticle_id().equals(id)) {
+
+                                ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                                        setImageResource(R.drawable.bookmark_tick);
+                            } else {
+                                ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                                        setImageResource(R.drawable.bookmark);
+                            }
+
+                        }
+                        }
+                    }
+
+                }
+
+
                 MainScreen.viewpager.setCurrentItem(1);
                 Toast.makeText(getActivity(), "List is Populated..."+Constants.newsArrayList.size(), Toast.LENGTH_SHORT).show();
 
             } else {
 
-                Toast.makeText(getActivity(), "List is Empty...", Toast.LENGTH_SHORT).show();
+                if (tableName.equals(Constants.bookmarksTable)){
+                    Toast.makeText(getActivity(), "No bookmarks added.", Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(getActivity(), "No news found.", Toast.LENGTH_SHORT).show();
+                }
+
 
             }
         }
     }
 
+
+    public View setInfiniteViewPager(int position){
+
+        LayoutInflater layoutInflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View view =  layoutInflater.inflate(R.layout.viewpagetitem,null);
+
+        ImageView imageView = (ImageView)view.findViewById(R.id.imageView);
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                getActivity().getResources().getDisplayMetrics().widthPixels*75/100);
+        layoutParams.gravity = Gravity.CENTER;
+        imageView.setLayoutParams(layoutParams);
+
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if(MainScreen.snackbar.isShown()){
+                    MainScreen.snackbar.dismiss();
+                    MainScreen.toolbar.animate().translationY(-MainScreen.toolbar.getHeight()).setInterpolator(new AccelerateInterpolator(2)).start();
+                }else{
+                    MainScreen.snackbar.show();
+                    MainScreen.toolbar.animate().translationY(0).setInterpolator(new DecelerateInterpolator(2)).start();
+                }
+            }
+        });
+        final NewsModel.GeneralNewsBean generalNewsBean = Constants.newsArrayList.get(position);
+        TextView description = (TextView)view.findViewById(R.id.description);
+        TextView title = (TextView)view.findViewById(R.id.title);
+        TextView category = (TextView)view.findViewById(R.id.category);
+        TextView pubDate = (TextView)view.findViewById(R.id.pubDate);
+        TextView readMore = (TextView)view.findViewById(R.id.readMore);
+
+        readMore.setVisibility(View.GONE);
+
+        title.setText(generalNewsBean.getData().getTitle());
+        description.setText(generalNewsBean.getData().getDescription());
+        category.setText(generalNewsBean.getData().getCategory_name());
+        pubDate.setText(generalNewsBean.getData().getPubDate());
+        title.setText(generalNewsBean.getData().getTitle());
+        // readMore.setText(generalNewsBean.getData().getDetail_description_url());
+        readMore.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+                builder.setStartAnimations(getActivity(), R.anim.slide_in_right, R.anim.slide_out_left);
+                builder.setExitAnimations(getActivity(), R.anim.slide_in_left, R.anim.slide_out_right);
+                CustomTabsIntent customTabsIntent = builder.build();
+                customTabsIntent.launchUrl(getActivity(), Uri.parse(generalNewsBean.getData().getDetail_description_url()));
+            }
+        });
+
+        Glide.with(getActivity())
+                .load(generalNewsBean.getData().getImage_url())
+                .into(imageView);
+
+
+
+        return view;
+
+    }
 
 }

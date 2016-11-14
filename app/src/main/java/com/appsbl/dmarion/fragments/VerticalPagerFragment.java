@@ -51,6 +51,7 @@ public class VerticalPagerFragment extends Fragment {
 
 
 
+
     public static final VerticalPagerFragment newInstance(String message)
 
     {
@@ -67,12 +68,8 @@ public class VerticalPagerFragment extends Fragment {
 
     }
 
-
-    me.kaelaela.verticalviewpager.VerticalViewPager verticalViewPager;
     public static InfiniteVerticalPager infiniteViewPager;
 
-    VerticalViewPager pager;
-    VerticalPager verticalPager;
     @Override
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -93,9 +90,29 @@ public class VerticalPagerFragment extends Fragment {
                 Toast.makeText(getActivity(),""+newPageIndex,Toast.LENGTH_SHORT).show();
             }
         });
+
         for(int i = 0; i < Constants.newsArrayList.size();i++){
 
             infiniteViewPager.addView(setInfiniteViewPager(i));
+
+            NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(i).getData();
+
+            if(i == 0){
+            for(int j = 0 ; j < MainScreen.bookmarksList.size(); j++){
+
+                String id = MainScreen.bookmarksList.get(j);
+                if(dataBean.getArticle_id().equals(id)){
+
+                    ((ImageView)MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                            setImageResource(R.drawable.bookmark_tick);
+                }else{
+                    ((ImageView)MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                            setImageResource(R.drawable.bookmark);
+                }
+
+
+            }
+            }
 
         }
 
@@ -110,6 +127,28 @@ public class VerticalPagerFragment extends Fragment {
 
                 CustomWebFragment.webView.loadUrl(Constants.newsArrayList.get(newPageIndex).getData().getDetail_description_url());
 
+                    NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(newPageIndex).getData();
+                boolean found = false;
+                    for(int j = 0 ; j < MainScreen.bookmarksList.size(); j++){
+
+                        String id = MainScreen.bookmarksList.get(j);
+                        if(dataBean.getArticle_id().equals(id)){
+                            found = true;
+                            ((ImageView)MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                                    setImageResource(R.drawable.bookmark_tick);
+                            break;
+
+                        }
+
+
+                }
+
+                if(!found){
+                    ((ImageView)MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                            setImageResource(R.drawable.bookmark);
+
+                }
+
 
             }
         });
@@ -119,7 +158,7 @@ public class VerticalPagerFragment extends Fragment {
     }
 
     
-    View setInfiniteViewPager(int position){
+   public View setInfiniteViewPager(int position){
 
         LayoutInflater layoutInflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View view =  layoutInflater.inflate(R.layout.viewpagetitem,null);
@@ -150,6 +189,7 @@ public class VerticalPagerFragment extends Fragment {
         TextView pubDate = (TextView)view.findViewById(R.id.pubDate);
         TextView readMore = (TextView)view.findViewById(R.id.readMore);
 
+        readMore.setVisibility(View.GONE);
 
         title.setText(generalNewsBean.getData().getTitle());
         description.setText(generalNewsBean.getData().getDescription());
@@ -223,6 +263,7 @@ public class VerticalPagerFragment extends Fragment {
                     NewsModel.GeneralNewsBean item = new NewsModel.GeneralNewsBean();
                     NewsModel.GeneralNewsBean.DataBean dataBean = new NewsModel.GeneralNewsBean.DataBean();
 
+                    dataBean.setArticle_id(cursor.getString(cursor.getColumnIndex("article_id")));
                     dataBean.setCategory_name(cursor.getString(cursor.getColumnIndex("category_name")));
                     dataBean.setTitle(cursor.getString(cursor.getColumnIndex("title")));
                     dataBean.setDescription(cursor.getString(cursor.getColumnIndex("description")));

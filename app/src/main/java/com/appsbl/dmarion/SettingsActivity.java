@@ -3,6 +3,7 @@ package com.appsbl.dmarion;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.Image;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -37,7 +38,14 @@ public class SettingsActivity extends AppCompatActivity {
         sp = PreferenceManager.getDefaultSharedPreferences(SettingsActivity.this);
         editor = sp.edit();
 
+        toggleButton = (ToggleButton) findViewById(R.id.toggle2);
 
+        if (AppCompatDelegate.getDefaultNightMode()
+                == AppCompatDelegate.MODE_NIGHT_YES) {
+            toggleButton.setChecked(true);
+        } else {
+            toggleButton.setChecked(false);
+        }
 
         about_us = (TextView) findViewById(R.id.about_us);
         about_app = (TextView) findViewById(R.id.about_app);
@@ -105,21 +113,27 @@ public class SettingsActivity extends AppCompatActivity {
                 loadUrl(settingInfoBean.getContact_us_text());
             }
         });
-        toggleButton = (ToggleButton) findViewById(R.id.toggle2);
 
         toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (AppCompatDelegate.getDefaultNightMode()
                         == AppCompatDelegate.MODE_NIGHT_YES) {
-                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                    editor.putBoolean("nigthMode",true);
+                    editor.commit();
+                    setNightMode(AppCompatDelegate.MODE_NIGHT_NO);
                 } else {
-                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                    editor.putBoolean("nigthMode",false);
+                    editor.commit();
+                    setNightMode(AppCompatDelegate.MODE_NIGHT_YES);
                 }
 
-                Intent intent = getIntent();
+              /*  Intent intent = getIntent();
                 finish();
                 startActivity(intent);
+*/
+
+             //   setNightMode();
 
             }
         });
@@ -130,13 +144,20 @@ public class SettingsActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        if (AppCompatDelegate.getDefaultNightMode()
-                == AppCompatDelegate.MODE_NIGHT_YES) {
-            toggleButton.setChecked(true);
-        } else {
-            toggleButton.setChecked(false);
-        }
+
+
     }
+
+    private void setNightMode(@AppCompatDelegate.NightMode int nightMode) {
+        AppCompatDelegate.setDefaultNightMode(nightMode);
+
+        if (Build.VERSION.SDK_INT >= 11) {
+            recreate();
+        }
+
+
+    }
+
 
     void loadUrl(String url){
         if(url!=null || !url.isEmpty()){

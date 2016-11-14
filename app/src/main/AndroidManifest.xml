@@ -27,7 +27,10 @@
             android:theme="@style/AppTheme" />
         <activity
             android:name=".SettingsActivity"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme">
+            <meta-data android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainScreen" />
+        </activity>
         <activity
             android:name=".WebpageFromSetting"
             android:theme="@style/AppTheme"></activity>
