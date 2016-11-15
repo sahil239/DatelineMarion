@@ -153,6 +153,7 @@ public class VerticalPagerFragment extends Fragment {
             }
         });
 
+
         return view;
 
     }

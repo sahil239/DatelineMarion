@@ -446,4 +446,10 @@ public class DrawerFragment extends Fragment {
 
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+
+    }
+
 }

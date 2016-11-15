@@ -574,7 +574,13 @@ public class MainScreen extends AppCompatActivity {
                         DrawerFragment.bookmarks.setImageResource(R.drawable.all_bookmark);
                         DrawerFragment.all_news.setImageResource(R.drawable.all_news_tick);
                         DrawerFragment.unread.setImageResource(R.drawable.all_read);
-                        MainScreen.viewpager.setCurrentItem(1);
+                        if(getIntent().getExtras() == null) {
+                            MainScreen.viewpager.setCurrentItem(1);
+                        }else{
+                            if(getIntent().getExtras().getString("from").equals("setting")){
+                                MainScreen.viewpager.setCurrentItem(0);
+                            }
+                        }
                         Toast.makeText(MainScreen.this, "List is Populated..."+Constants.newsArrayList.size(), Toast.LENGTH_SHORT).show();
 
                     }

@@ -13,27 +13,21 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:uiOptions="splitActionBarWhenNarrow">
-        <activity
-            android:name=".SplashActivity"
-            android:theme="@style/AppTheme">
+        <activity android:name=".SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".MainScreen"
-            android:theme="@style/AppTheme" />
-        <activity
-            android:name=".SettingsActivity"
-            android:theme="@style/AppTheme">
-            <meta-data android:name="android.support.PARENT_ACTIVITY"
+        <activity android:name=".MainScreen" />
+        <activity android:name=".SettingsActivity"
+            android:parentActivityName=".MainScreen">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainScreen" />
         </activity>
-        <activity
-            android:name=".WebpageFromSetting"
-            android:theme="@style/AppTheme"></activity>
+        <activity android:name=".WebpageFromSetting"></activity>
     </application>
 
 </manifest>
