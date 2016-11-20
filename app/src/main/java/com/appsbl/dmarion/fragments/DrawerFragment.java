@@ -336,11 +336,11 @@ public class DrawerFragment extends Fragment {
 
 
 
-                VerticalPagerFragment.infiniteViewPager.removeAllViews();
+                VerticalPagerFragment.infiniteVerticalPager.removeAllViews();
 
                 for(int i = 0; i < Constants.newsArrayList.size();i++){
 
-                    VerticalPagerFragment.infiniteViewPager.addView(setInfiniteViewPager(i));
+                    VerticalPagerFragment.infiniteVerticalPager.addView(setInfiniteViewPager(i));
 
                     NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(i).getData();
 

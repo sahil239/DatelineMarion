@@ -24,6 +24,8 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
+    compile 'com.asha.nightowllib:nightowllib:0.2'
+
     compile 'com.android.support:appcompat-v7:23.4.0'
     compile 'com.android.support:design:23.4.0'
     compile 'com.androidadvance:topsnackbar:1.1.1'
@@ -38,7 +40,6 @@ dependencies {
     compile 'com.ToxicBakery.viewpager.transforms:view-pager-transforms:1.2.32@aar'
     compile 'com.squareup.okhttp3:okhttp:3.4.2'
     testCompile 'junit:junit:4.12'
-    compile project(':verticalViewPager')
-    compile project(':freePager')
-
+    compile project(':DoubleViewPager')
+    compile project(':fPager')
 }

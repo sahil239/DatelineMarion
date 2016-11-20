@@ -1,1 +1,1 @@
-include ':app', ':verticalViewPager', ':freePager'
+include ':app', ':DoubleViewPager', ':fPager'

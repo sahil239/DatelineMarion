@@ -105,11 +105,11 @@ public class MainScreen extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                if (VerticalPagerFragment.infiniteViewPager.getCurrentPage() == 0) {
+                if (VerticalPagerFragment.infiniteVerticalPager.getCurrentPage() == 0) {
 
                     new GetNews().execute();
                 } else {
-                    VerticalPagerFragment.infiniteViewPager.snapToPage(0);
+                    VerticalPagerFragment.infiniteVerticalPager.snapToPage(0);
                 }
 
 
@@ -144,7 +144,7 @@ public class MainScreen extends AppCompatActivity {
 
         layout.setPadding(0, 0, 0, 0); //set padding to 0
 
-        layout.setBackgroundColor(Color.parseColor("#38000000"));
+        layout.setBackgroundColor(Color.parseColor("#ffffff"));
 
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.gravity = Gravity.BOTTOM;
@@ -154,7 +154,7 @@ public class MainScreen extends AppCompatActivity {
         ((ImageView) snackView.findViewById(R.id.option_one)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int count = VerticalPagerFragment.infiniteViewPager.getCurrentPage();
+                int count = VerticalPagerFragment.infiniteVerticalPager.getCurrentPage();
                 store(count);
             }
         });
@@ -163,7 +163,7 @@ public class MainScreen extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                int count = VerticalPagerFragment.infiniteViewPager.getCurrentPage();
+                int count = VerticalPagerFragment.infiniteVerticalPager.getCurrentPage();
                 NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(count).getData();
                 Constants.shareOptions(MainScreen.this, dataBean.getDetail_description_url(), dataBean.getTitle());
 
@@ -542,11 +542,11 @@ public class MainScreen extends AppCompatActivity {
 
                         fetchBookMarkIds();
                        // VerticalPagerFragment.infiniteViewPager.notifyAll();
-                        VerticalPagerFragment.infiniteViewPager.removeAllViews();
+                        VerticalPagerFragment.infiniteVerticalPager.removeAllViews();
 
                         for(int i = 0; i < Constants.newsArrayList.size();i++){
 
-                            VerticalPagerFragment.infiniteViewPager.addView(setInfiniteViewPager(i));
+                            VerticalPagerFragment.infiniteVerticalPager.addView(setInfiniteViewPager(i));
 
                             NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(i).getData();
 

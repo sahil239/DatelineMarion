@@ -9,9 +9,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/DoubleViewPager" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/freePager" />
-            <option value="$PROJECT_DIR$/verticalViewPager" />
+            <option value="$PROJECT_DIR$/fPager" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

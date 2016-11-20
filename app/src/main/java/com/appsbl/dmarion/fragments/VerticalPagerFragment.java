@@ -1,5 +1,6 @@
 package com.appsbl.dmarion.fragments;
 
+import android.animation.LayoutTransition;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -18,7 +19,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateInterpolator;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LayoutAnimationController;
+import android.view.animation.TranslateAnimation;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -28,8 +33,10 @@ import android.widget.Toast;
 import com.appsbl.dmarion.Constants;
 import com.appsbl.dmarion.MainScreen;
 import com.appsbl.dmarion.R;
+import com.appsbl.dmarion.VerticalPagerAdapter;
 import com.appsbl.dmarion.model.NewsModel;
 import com.bumptech.glide.Glide;
+import com.emoiluj.doubleviewpager.VerticalViewPager;
 import com.google.gson.Gson;
 
 import java.io.File;
@@ -37,9 +44,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import fr.castorflex.android.verticalviewpager.VerticalViewPager;
+import com.ToxicBakery.viewpager.transforms.FlipVerticalTransformer;
+
 import pro.alexzaitsev.freepager.library.view.core.VerticalPager;
 import pro.alexzaitsev.freepager.library.view.infinite.InfiniteVerticalPager;
+
 
 /**
  * Created by HP on 12-11-2016.
@@ -50,7 +59,9 @@ public class VerticalPagerFragment extends Fragment {
     public static final String EXTRA_MESSAGE = "EXTRA_MESSAGE";
 
 
+    public static VerticalViewPager doubleViewVertical;
 
+    public static InfiniteVerticalPager infiniteVerticalPager;
 
     public static final VerticalPagerFragment newInstance(String message)
 
@@ -68,8 +79,6 @@ public class VerticalPagerFragment extends Fragment {
 
     }
 
-    public static InfiniteVerticalPager infiniteViewPager;
-
     @Override
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -80,71 +89,136 @@ public class VerticalPagerFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.verticalpagerlayout, container, false);
 
-        fetchDataFromSqlite(Constants.newsTable,"");
+        fetchDataFromSqlite(Constants.newsTable, "");
 
-        infiniteViewPager = (InfiniteVerticalPager)view.findViewById(R.id.infiniteViewPager);
 
-        infiniteViewPager.addOnPageChangedListener(new VerticalPager.OnVerticalPageChangeListener() {
+        doubleViewVertical = (VerticalViewPager) view.findViewById(R.id.doubleViewVertical);
+
+        doubleViewVertical.setAdapter(new VerticalPagerAdapter(getActivity()));
+
+        infiniteVerticalPager = (InfiniteVerticalPager) view.findViewById(R.id.infiniteVerticalPager);
+
+        LayoutTransition layoutTransition = new LayoutTransition();
+        infiniteVerticalPager.setVerticalFadingEdgeEnabled(true);
+
+        doubleViewVertical.setOnPageChangeListener(new VerticalViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int newPageIndex) {
+
+                MainScreen.snackbar.dismiss();
+                if (newPageIndex == 0) {
+                    MainScreen.refreshortop.setImageResource(R.drawable.refress);
+                } else {
+                    MainScreen.refreshortop.setImageResource(R.drawable.top);
+                }
+
+                //   CustomWebFragment.webView.loadUrl(Constants.newsArrayList.get(newPageIndex).getData().getDetail_description_url());
+
+                NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(newPageIndex).getData();
+                boolean found = false;
+                for (int j = 0; j < MainScreen.bookmarksList.size(); j++) {
+
+                    String id = MainScreen.bookmarksList.get(j);
+                    if (dataBean.getArticle_id().equals(id)) {
+                        found = true;
+                        ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                                setImageResource(R.drawable.bookmark_tick);
+                        break;
+
+                    }
+
+
+                }
+
+                if (!found) {
+                    ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                            setImageResource(R.drawable.bookmark);
+
+                }
+
+                Toast.makeText(getActivity(), "" + newPageIndex, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+
+
+      /*  infiniteVerticalPager.addOnPageChangedListener(new VerticalPager.OnVerticalPageChangeListener() {
             @Override
             public void onVerticalPageChanged(int newPageIndex) {
                 Toast.makeText(getActivity(),""+newPageIndex,Toast.LENGTH_SHORT).show();
             }
-        });
+        });*/
+        // doubleViewVertical.setPageTransformer();
+        for (int i = 0; i < Constants.newsArrayList.size(); i++) {
 
-        for(int i = 0; i < Constants.newsArrayList.size();i++){
+            infiniteVerticalPager.addView(setInfiniteViewPager(i));
 
-            infiniteViewPager.addView(setInfiniteViewPager(i));
+            //  doubleViewVertical.addView(setInfiniteViewPager(i));
 
             NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(i).getData();
 
-            if(i == 0){
-            for(int j = 0 ; j < MainScreen.bookmarksList.size(); j++){
+            if (i == 0) {
+                for (int j = 0; j < MainScreen.bookmarksList.size(); j++) {
 
-                String id = MainScreen.bookmarksList.get(j);
-                if(dataBean.getArticle_id().equals(id)){
+                    String id = MainScreen.bookmarksList.get(j);
+                    if (dataBean.getArticle_id().equals(id)) {
 
-                    ((ImageView)MainScreen.snackbar.getView().findViewById(R.id.option_one)).
-                            setImageResource(R.drawable.bookmark_tick);
-                }else{
-                    ((ImageView)MainScreen.snackbar.getView().findViewById(R.id.option_one)).
-                            setImageResource(R.drawable.bookmark);
+                        ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                                setImageResource(R.drawable.bookmark_tick);
+                    } else {
+                        ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                                setImageResource(R.drawable.bookmark);
+                    }
+
+
                 }
-
-
-            }
             }
 
         }
-
-        infiniteViewPager.addOnPageChangedListener(new VerticalPager.OnVerticalPageChangeListener() {
+        infiniteVerticalPager.addOnPageChangedListener(new VerticalPager.OnVerticalPageChangeListener() {
             @Override
             public void onVerticalPageChanged(int newPageIndex) {
-                if(newPageIndex==0){
+
+                if (MainScreen.snackbar.isShown()) {
+
+                    MainScreen.snackbar.dismiss();
+                    MainScreen.toolbar.animate().translationY(-MainScreen.toolbar.getHeight()).setInterpolator(new AccelerateInterpolator(2)).start();
+                }
+                if (newPageIndex == 0) {
                     MainScreen.refreshortop.setImageResource(R.drawable.refress);
-                }else{
+                } else {
                     MainScreen.refreshortop.setImageResource(R.drawable.top);
                 }
 
                 CustomWebFragment.webView.loadUrl(Constants.newsArrayList.get(newPageIndex).getData().getDetail_description_url());
 
-                    NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(newPageIndex).getData();
+                NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(newPageIndex).getData();
                 boolean found = false;
-                    for(int j = 0 ; j < MainScreen.bookmarksList.size(); j++){
+                for (int j = 0; j < MainScreen.bookmarksList.size(); j++) {
 
-                        String id = MainScreen.bookmarksList.get(j);
-                        if(dataBean.getArticle_id().equals(id)){
-                            found = true;
-                            ((ImageView)MainScreen.snackbar.getView().findViewById(R.id.option_one)).
-                                    setImageResource(R.drawable.bookmark_tick);
-                            break;
+                    String id = MainScreen.bookmarksList.get(j);
+                    if (dataBean.getArticle_id().equals(id)) {
+                        found = true;
+                        ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                                setImageResource(R.drawable.bookmark_tick);
+                        break;
 
-                        }
+                    }
 
 
                 }
 
-                if(!found){
-                    ((ImageView)MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                if (!found) {
+                    ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
                             setImageResource(R.drawable.bookmark);
 
                 }
@@ -158,15 +232,15 @@ public class VerticalPagerFragment extends Fragment {
 
     }
 
-    
-   public View setInfiniteViewPager(int position){
+
+    public View setInfiniteViewPager(int position) {
 
         LayoutInflater layoutInflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View view =  layoutInflater.inflate(R.layout.viewpagetitem,null);
+        View view = layoutInflater.inflate(R.layout.viewpagetitem, null);
 
-        ImageView imageView = (ImageView)view.findViewById(R.id.imageView);
+        ImageView imageView = (ImageView) view.findViewById(R.id.imageView);
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                getActivity().getResources().getDisplayMetrics().widthPixels*75/100);
+                getActivity().getResources().getDisplayMetrics().widthPixels * 75 / 100);
         layoutParams.gravity = Gravity.CENTER;
         imageView.setLayoutParams(layoutParams);
 
@@ -174,21 +248,21 @@ public class VerticalPagerFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
-                if(MainScreen.snackbar.isShown()){
+                if (MainScreen.snackbar.isShown()) {
                     MainScreen.snackbar.dismiss();
                     MainScreen.toolbar.animate().translationY(-MainScreen.toolbar.getHeight()).setInterpolator(new AccelerateInterpolator(2)).start();
-                }else{
+                } else {
                     MainScreen.snackbar.show();
                     MainScreen.toolbar.animate().translationY(0).setInterpolator(new DecelerateInterpolator(2)).start();
                 }
             }
         });
         final NewsModel.GeneralNewsBean generalNewsBean = Constants.newsArrayList.get(position);
-        TextView description = (TextView)view.findViewById(R.id.description);
-        TextView title = (TextView)view.findViewById(R.id.title);
-        TextView category = (TextView)view.findViewById(R.id.category);
-        TextView pubDate = (TextView)view.findViewById(R.id.pubDate);
-        TextView readMore = (TextView)view.findViewById(R.id.readMore);
+        TextView description = (TextView) view.findViewById(R.id.description);
+        TextView title = (TextView) view.findViewById(R.id.title);
+        TextView category = (TextView) view.findViewById(R.id.category);
+        TextView pubDate = (TextView) view.findViewById(R.id.pubDate);
+        TextView readMore = (TextView) view.findViewById(R.id.readMore);
 
         readMore.setVisibility(View.GONE);
 
@@ -214,13 +288,12 @@ public class VerticalPagerFragment extends Fragment {
                 .into(imageView);
 
 
-
         return view;
-        
+
     }
-    
+
     File SDCardRoot = Environment.getExternalStorageDirectory();
-    File folder = new File(SDCardRoot+Constants.dataFilePath);
+    File folder = new File(SDCardRoot + Constants.dataFilePath);
 
     public String loadJSONFromAsset(String path) {
         String json = null;
@@ -240,7 +313,7 @@ public class VerticalPagerFragment extends Fragment {
     }
 
 
-    void fetchDataFromSqlite(String tableName,String category_name){
+    void fetchDataFromSqlite(String tableName, String category_name) {
 
         SQLiteDatabase database = getActivity().openOrCreateDatabase(Constants.databaseName, getActivity().MODE_PRIVATE, null);
 
@@ -248,10 +321,10 @@ public class VerticalPagerFragment extends Fragment {
         if (database != null) {
 
             Cursor cursor;
-            if(category_name.equals("")){
-                cursor  = database.rawQuery("select * from '" + tableName + "'", null);
-            }else{
-                cursor  = database.rawQuery("select * from '" + tableName + "'"+" WHERE category_name ='" + category_name + "'", null);
+            if (category_name.equals("")) {
+                cursor = database.rawQuery("select * from '" + tableName + "'", null);
+            } else {
+                cursor = database.rawQuery("select * from '" + tableName + "'" + " WHERE category_name ='" + category_name + "'", null);
             }
 
             if (cursor.getCount() > 0) {
@@ -260,7 +333,7 @@ public class VerticalPagerFragment extends Fragment {
                 do {
                     //Getting data using column name
 
-                    Log.d("cursor",cursor.getColumnNames()[0]);
+                    Log.d("cursor", cursor.getColumnNames()[0]);
                     NewsModel.GeneralNewsBean item = new NewsModel.GeneralNewsBean();
                     NewsModel.GeneralNewsBean.DataBean dataBean = new NewsModel.GeneralNewsBean.DataBean();
 
@@ -281,9 +354,9 @@ public class VerticalPagerFragment extends Fragment {
                 } while (cursor.moveToNext());
 
 
-             //   MainScreen.viewpager.setAdapter(MainScreen.doubleViewPagerAdapter);
+                //   MainScreen.viewpager.setAdapter(MainScreen.doubleViewPagerAdapter);
                 MainScreen.viewpager.setCurrentItem(1);
-                Toast.makeText(getActivity(), "List is Populated..."+Constants.newsArrayList.size(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "List is Populated..." + Constants.newsArrayList.size(), Toast.LENGTH_SHORT).show();
 
             } else {
 

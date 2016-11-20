@@ -3,9 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/DatelineMarion.iml" filepath="$PROJECT_DIR$/DatelineMarion.iml" />
+      <module fileurl="file://$PROJECT_DIR$/DoubleViewPager/DoubleViewPager.iml" filepath="$PROJECT_DIR$/DoubleViewPager/DoubleViewPager.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/freePager/freePager.iml" filepath="$PROJECT_DIR$/freePager/freePager.iml" />
-      <module fileurl="file://$PROJECT_DIR$/verticalViewPager/verticalViewPager.iml" filepath="$PROJECT_DIR$/verticalViewPager/verticalViewPager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fPager/fPager.iml" filepath="$PROJECT_DIR$/fPager/fPager.iml" />
     </modules>
   </component>
 </project>

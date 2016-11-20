@@ -4,11 +4,18 @@
     android:layout_height="match_parent">
 
 
-
     <pro.alexzaitsev.freepager.library.view.infinite.InfiniteVerticalPager
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/infiniteViewPager"></pro.alexzaitsev.freepager.library.view.infinite.InfiniteVerticalPager>
+        android:id="@+id/infiniteVerticalPager">
 
+    </pro.alexzaitsev.freepager.library.view.infinite.InfiniteVerticalPager>
 
+    <com.emoiluj.doubleviewpager.VerticalViewPager
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/doubleViewVertical">
+
+    </com.emoiluj.doubleviewpager.VerticalViewPager>
 </LinearLayout>
