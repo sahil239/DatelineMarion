@@ -336,7 +336,7 @@ public class DrawerFragment extends Fragment {
 
 
 
-                VerticalPagerFragment.infiniteVerticalPager.removeAllViews();
+            //    VerticalPagerFragment.infiniteVerticalPager.removeAllViews();
 
                 for(int i = 0; i < Constants.newsArrayList.size();i++){
 

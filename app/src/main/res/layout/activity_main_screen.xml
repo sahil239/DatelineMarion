@@ -12,8 +12,15 @@
 
     <android.support.v4.view.ViewPager
         android:id="@+id/pager"
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
+
+    <com.emoiluj.doubleviewpager.DoubleViewPager
+        android:id="@+id/viewPager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
 
     <include
         layout="@layout/tool_bar"

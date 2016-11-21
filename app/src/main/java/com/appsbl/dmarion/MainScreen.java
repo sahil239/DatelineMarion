@@ -49,6 +49,9 @@ import com.appsbl.dmarion.fragments.DrawerFragment;
 import com.appsbl.dmarion.fragments.VerticalPagerFragment;
 import com.appsbl.dmarion.model.NewsModel;
 import com.bumptech.glide.Glide;
+import com.emoiluj.doubleviewpager.DoubleViewPager;
+import com.emoiluj.doubleviewpager.DoubleViewPagerAdapter;
+import com.emoiluj.doubleviewpager.HorizontalViewPager;
 import com.google.gson.Gson;
 
 import org.json.JSONObject;
@@ -72,6 +75,7 @@ import retrofit2.Retrofit;
 public class MainScreen extends AppCompatActivity {
 
     public static ViewPager viewpager;
+    public static DoubleViewPager viewPager;
     File SDCardRoot = Environment.getExternalStorageDirectory();
     File folder = new File(SDCardRoot + Constants.dataFilePath);
     public static Snackbar snackbar;
@@ -82,7 +86,10 @@ public class MainScreen extends AppCompatActivity {
     ImageView opendrawer;
 
     public static ArrayList<String> bookmarksList = new ArrayList<>();
+    public static com.appsbl.dmarion.adapter.DoubleViewPagerAdapter doubleViewPagerAdapter;
 
+    public static boolean refresh = true;
+    public static int count = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,8 +112,7 @@ public class MainScreen extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                if (VerticalPagerFragment.infiniteVerticalPager.getCurrentPage() == 0) {
-
+                if (refresh) {
                     new GetNews().execute();
                 } else {
                     VerticalPagerFragment.infiniteVerticalPager.snapToPage(0);
@@ -116,6 +122,7 @@ public class MainScreen extends AppCompatActivity {
             }
         });
 
+        viewPager = (DoubleViewPager)findViewById(R.id.viewPager);
 
         // setSupportActionBar(toolbar);
 
@@ -154,7 +161,7 @@ public class MainScreen extends AppCompatActivity {
         ((ImageView) snackView.findViewById(R.id.option_one)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int count = VerticalPagerFragment.infiniteVerticalPager.getCurrentPage();
+
                 store(count);
             }
         });
@@ -211,7 +218,7 @@ public class MainScreen extends AppCompatActivity {
             if(cursor1.getCount() > 0){
                 cursor1.moveToFirst();
                 do{
-                    Log.d("cursor>>", cursor1.getString(cursor1.getColumnIndex("article_id")));
+                    Log.d("cursor>>fetchBook",""+ cursor1.getString(cursor1.getColumnIndex("article_id")));
                     bookmarksList.add(cursor1.getString(cursor1.getColumnIndex("article_id")));
 
                 }while (cursor1.moveToNext());
@@ -298,13 +305,20 @@ public class MainScreen extends AppCompatActivity {
         bottomSnackBar();
         // topSnackbar();
 
-        List<Fragment> fragments = getFragments();
 
         viewpager = (ViewPager) findViewById(R.id.pager);
-        viewpager.setAdapter(new MyPageAdapter(getSupportFragmentManager(), fragments));
-        viewpager.setCurrentItem(1);
 
-        viewpager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+        ArrayList<PagerAdapter> verticalAdapters = new ArrayList<PagerAdapter>();
+        generateVerticalAdapters(verticalAdapters);
+
+
+
+        doubleViewPagerAdapter = new com.appsbl.dmarion.adapter.DoubleViewPagerAdapter(getApplicationContext(), verticalAdapters);
+
+        viewPager.setAdapter(doubleViewPagerAdapter);
+        viewPager.setCurrentItem(1);
+
+        viewPager.setOnPageChangeListener(new HorizontalViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
 
@@ -313,7 +327,7 @@ public class MainScreen extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
 
-                if (position == 0 || position == 2) {
+                if (position == 0 ) {
                     snackbar.dismiss();
                     toolbar.animate().translationY(-MainScreen.toolbar.getHeight()).setInterpolator(new AccelerateInterpolator(2)).start();
                 } else {
@@ -328,25 +342,22 @@ public class MainScreen extends AppCompatActivity {
             }
         });
 
+    }
 
+    private void generateVerticalAdapters(ArrayList<PagerAdapter> verticalAdapters) {
+        for (int i=0; i<2; i++){
+            if(i == 1){
+                verticalAdapters.add(new VerticalPagerAdapter(MainScreen.this));
+            }/*else if(i == 2){
+                verticalAdapters.add(new DrawerAdapter(MainScreen.this,this, 2, 1,false));
+            }*/else{
+                verticalAdapters.add(new DrawerAdapter(MainScreen.this,this, 0, 1,true));
+            }
+
+        }
     }
 
 
-    private List<Fragment> getFragments() {
-
-        List<Fragment> fList = new ArrayList<Fragment>();
-
-
-        fList.add(DrawerFragment.newInstance("Fragment 1"));
-
-        fList.add(VerticalPagerFragment.newInstance("Fragment 2"));
-
-        fList.add(CustomWebFragment.newInstance("Fragment 3"));
-
-
-        return fList;
-
-    }
 
 
     class MyPageAdapter extends FragmentPagerAdapter {
@@ -542,45 +553,15 @@ public class MainScreen extends AppCompatActivity {
 
                         fetchBookMarkIds();
                        // VerticalPagerFragment.infiniteViewPager.notifyAll();
-                        VerticalPagerFragment.infiniteVerticalPager.removeAllViews();
 
-                        for(int i = 0; i < Constants.newsArrayList.size();i++){
+                        ArrayList<PagerAdapter> verticalAdapters = new ArrayList<PagerAdapter>();
+                        generateVerticalAdapters(verticalAdapters);
+                        doubleViewPagerAdapter = new com.appsbl.dmarion.adapter.DoubleViewPagerAdapter(getApplicationContext(), verticalAdapters);
 
-                            VerticalPagerFragment.infiniteVerticalPager.addView(setInfiniteViewPager(i));
-
-                            NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(i).getData();
-
-                            if(i == 0){
-                                
-                                    for(int j = 0 ; j < bookmarksList.size(); j++) {
-
-                                        String id = bookmarksList.get(j);
-                                        if (dataBean.getArticle_id().equals(id)) {
-
-                                            ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
-                                                    setImageResource(R.drawable.bookmark_tick);
-                                        } else {
-                                            ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
-                                                    setImageResource(R.drawable.bookmark);
-                                        }
-
-                                    }
-                                }
-                            
-
-                        }
+                        viewPager.setAdapter(doubleViewPagerAdapter);
+                        viewPager.setCurrentItem(1);
 
 
-                        DrawerFragment.bookmarks.setImageResource(R.drawable.all_bookmark);
-                        DrawerFragment.all_news.setImageResource(R.drawable.all_news_tick);
-                        DrawerFragment.unread.setImageResource(R.drawable.all_read);
-                        if(getIntent().getExtras() == null) {
-                            MainScreen.viewpager.setCurrentItem(1);
-                        }else{
-                            if(getIntent().getExtras().getString("from").equals("setting")){
-                                MainScreen.viewpager.setCurrentItem(0);
-                            }
-                        }
                         Toast.makeText(MainScreen.this, "List is Populated..."+Constants.newsArrayList.size(), Toast.LENGTH_SHORT).show();
 
                     }
@@ -635,66 +616,6 @@ public class MainScreen extends AppCompatActivity {
 
     }
 
-
-    void downloadFile(String dwnload_file_path) {
-
-        try {
-            // showProgress(dwnload_file_path);
-
-            URL url = new URL(dwnload_file_path);
-            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-
-            urlConnection.setRequestMethod("GET");
-            urlConnection.setDoOutput(true);
-
-            //connect
-            urlConnection.connect();
-
-            //set the path where we want to save the file
-
-            if (!folder.exists()) {
-                folder.mkdirs();
-            }
-            //create a new file, to save the downloaded file
-            File file = new File(folder, dwnload_file_path.split("/")[dwnload_file_path.split("/").length - 1]);
-
-            FileOutputStream fileOutput = new FileOutputStream(file);
-
-            //Stream used for reading the data from the internet
-            InputStream inputStream = urlConnection.getInputStream();
-
-            //this is the total size of the file which we are downloading
-
-            //create a buffer...
-            byte[] buffer = new byte[1024];
-            int bufferLength = 0;
-
-            while ((bufferLength = inputStream.read(buffer)) > 0) {
-                fileOutput.write(buffer, 0, bufferLength);
-
-                // update the progressbar //
-
-            }
-            //close the output stream when complete //
-
-            //   showError("Downloaded " + file.exists());
-            fileOutput.close();
-
-
-        } catch (final MalformedURLException e) {
-            showError("Error : MalformedURLException " + e);
-            //    dialog.dismiss();// if you want close it..
-            e.printStackTrace();
-        } catch (final IOException e) {
-            //   showError("Error : IOException " + e);
-            //   dialog.dismiss();// if you want close it..
-            e.printStackTrace();
-        } catch (final Exception e) {
-//            dialog.dismiss();// if you want close it..
-            showError("Error : Please check your internet connection " + e);
-        }
-    }
-
     void showError(final String err) {
         runOnUiThread(new Runnable() {
             public void run() {
@@ -708,21 +629,7 @@ public class MainScreen extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        /*if (sp.getBoolean("nightmode",false)) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-        }
-*/
-       // getDelegate().applyDayNight();
-
-
-        //  recreate();
 
     }
- /*   @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        getDelegate().applyDayNight();
-    }*/
+
 }

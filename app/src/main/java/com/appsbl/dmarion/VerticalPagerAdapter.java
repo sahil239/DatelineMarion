@@ -118,6 +118,4 @@ public class VerticalPagerAdapter extends PagerAdapter {
         return view;
     }
 
-
-
 }
