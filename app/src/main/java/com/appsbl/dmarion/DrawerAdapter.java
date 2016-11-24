@@ -53,6 +53,10 @@ public class DrawerAdapter extends PagerAdapter {
     Activity mActivity;
     private boolean isDrawer;
 
+    public static ImageView all_news;
+    public static ImageView bookmarks;
+    public static ImageView unread;
+
     SharedPreferences sp;
 
     public DrawerAdapter(Activity activity, Context c, int parent, int childs, boolean drawer) {
@@ -94,9 +98,9 @@ public class DrawerAdapter extends PagerAdapter {
         view = layoutInflater.inflate(R.layout.viewpagetitemdrawer, null);
 
         LinearLayout linearCategory = (LinearLayout) view.findViewById(R.id.linearCategory);
-        final ImageView all_news = (ImageView) view.findViewById(R.id.all_news);
-        final ImageView bookmarks = (ImageView) view.findViewById(R.id.bookmarks);
-        final ImageView unread = (ImageView) view.findViewById(R.id.unread);
+        all_news = (ImageView) view.findViewById(R.id.all_news);
+        bookmarks = (ImageView) view.findViewById(R.id.bookmarks);
+        unread = (ImageView) view.findViewById(R.id.unread);
 
         all_news.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -108,16 +112,36 @@ public class DrawerAdapter extends PagerAdapter {
             }
         });
 
+        ImageView settings = (ImageView) view.findViewById(R.id.setting);
+        final ImageView arrow = (ImageView) view.findViewById(R.id.arrow);
+
+        arrow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MainScreen.viewPager.setCurrentItem(1);
+            }
+        });
+
+        settings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mActivity, SettingsActivity.class);
+                mActivity.startActivity(intent);
+                mActivity.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            }
+        });
 
         bookmarks.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                fetchBookMarkIds();
+
+                ((ImageView) MainScreen.snackbar.getView().findViewById(R.id.option_one)).
+                        setImageResource(R.drawable.bookmark_tick);
                 bookmarks.setImageResource(R.drawable.all_bookmark_tick);
                 all_news.setImageResource(R.drawable.all_news);
                 unread.setImageResource(R.drawable.all_read);
-                fetchDataFromSqlite(Constants.bookmarksTable,"");
+                fetchDataFromSqlite(Constants.bookmarksTable, "");
             }
         });
 
@@ -234,8 +258,7 @@ public class DrawerAdapter extends PagerAdapter {
     }
 
 
-
-    void fetchBookMarkIds(){
+    void fetchBookMarkIds() {
 
         bookmarksList.clear();
         SQLiteDatabase database = mActivity.openOrCreateDatabase(Constants.databaseName, mActivity.MODE_PRIVATE, null);
@@ -245,13 +268,13 @@ public class DrawerAdapter extends PagerAdapter {
 
             Cursor cursor1 = database.rawQuery("select * from '" + Constants.bookmarksTable + "'", null);
 
-            if(cursor1.getCount() > 0){
+            if (cursor1.getCount() > 0) {
                 cursor1.moveToFirst();
-                do{
+                do {
                     Log.d("cursor>>", cursor1.getString(cursor1.getColumnIndex("article_id")));
                     bookmarksList.add(cursor1.getString(cursor1.getColumnIndex("article_id")));
 
-                }while (cursor1.moveToNext());
+                } while (cursor1.moveToNext());
 
             }
         }
@@ -259,13 +282,13 @@ public class DrawerAdapter extends PagerAdapter {
 
 
     private void generateVerticalAdapters(ArrayList<PagerAdapter> verticalAdapters) {
-        for (int i=0; i<2; i++){
-            if(i == 1){
+        for (int i = 0; i < 2; i++) {
+            if (i == 1) {
                 verticalAdapters.add(new VerticalPagerAdapter(mActivity));
             }/*else if(i == 2){
                 verticalAdapters.add(new DrawerAdapter(MainScreen.this,this, 2, 1,false));
-            }*/else{
-                verticalAdapters.add(new DrawerAdapter(mActivity,mActivity, 0, 1,true));
+            }*/ else {
+                verticalAdapters.add(new DrawerAdapter(mActivity, mActivity, 0, 1, true));
             }
 
         }
@@ -297,6 +320,7 @@ public class DrawerAdapter extends PagerAdapter {
 
                     dataBean.setCategory_name(cursor.getString(cursor.getColumnIndex("category_name")));
                     dataBean.setTitle(cursor.getString(cursor.getColumnIndex("title")));
+                    dataBean.setArticle_id(cursor.getString(cursor.getColumnIndex("article_id")));
                     dataBean.setDescription(cursor.getString(cursor.getColumnIndex("description")));
                     dataBean.setDetail_description_url(cursor.getString(cursor.getColumnIndex("detail_description_url")));
                     dataBean.setImage_url(cursor.getString(cursor.getColumnIndex("image_url")));

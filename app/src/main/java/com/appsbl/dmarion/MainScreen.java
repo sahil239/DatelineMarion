@@ -52,6 +52,7 @@ import com.bumptech.glide.Glide;
 import com.emoiluj.doubleviewpager.DoubleViewPager;
 import com.emoiluj.doubleviewpager.DoubleViewPagerAdapter;
 import com.emoiluj.doubleviewpager.HorizontalViewPager;
+import com.emoiluj.doubleviewpager.VerticalViewPager;
 import com.google.gson.Gson;
 
 import org.json.JSONObject;
@@ -98,14 +99,17 @@ public class MainScreen extends AppCompatActivity {
         sp = PreferenceManager.getDefaultSharedPreferences(MainScreen.this);
         editor = sp.edit();
 
+        viewPager = (DoubleViewPager)findViewById(R.id.viewPager);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         refreshortop = (ImageView) findViewById(R.id.refreshortop);
+
+        viewPager.setOffscreenPageLimit(2);
         opendrawer = (ImageView) findViewById(R.id.opendrawer);
 
         opendrawer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                viewpager.setCurrentItem(0);
+                viewPager.setCurrentItem(0);
             }
         });
         refreshortop.setOnClickListener(new View.OnClickListener() {
@@ -115,14 +119,32 @@ public class MainScreen extends AppCompatActivity {
                 if (refresh) {
                     new GetNews().execute();
                 } else {
-                    VerticalPagerFragment.infiniteVerticalPager.snapToPage(0);
+
+
+                   // Toast.makeText(MainScreen.this,viewPager.getCurrentItem()+"",Toast.LENGTH_SHORT).show();
+
+                  /*  VerticalViewPager verticalViewPager = (VerticalViewPager) viewPager.getChildAt(viewPager.getCurrentItem());
+                    verticalViewPager.setCurrentItem(0,true);*/
+                    //com.appsbl.dmarion.adapter.DoubleViewPagerAdapter.childVP.setCurrentItem(0,true);
+
+                    refreshortop.setImageResource(R.drawable.refress);
+                    ArrayList<PagerAdapter> verticalAdapters = new ArrayList<PagerAdapter>();
+                    generateVerticalAdapters(verticalAdapters);
+
+                    doubleViewPagerAdapter = new com.appsbl.dmarion.adapter.DoubleViewPagerAdapter(getApplicationContext(), verticalAdapters);
+
+                    viewPager.setAdapter(doubleViewPagerAdapter);
+                    viewPager.setCurrentItem(1);
+
+                  //  com.appsbl.dmarion.adapter.DoubleViewPagerAdapter.childVP.setCurrentItem(0,true);
+
                 }
 
 
             }
         });
 
-        viewPager = (DoubleViewPager)findViewById(R.id.viewPager);
+
 
         // setSupportActionBar(toolbar);
 
@@ -170,7 +192,7 @@ public class MainScreen extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                int count = VerticalPagerFragment.infiniteVerticalPager.getCurrentPage();
+
                 NewsModel.GeneralNewsBean.DataBean dataBean = Constants.newsArrayList.get(count).getData();
                 Constants.shareOptions(MainScreen.this, dataBean.getDetail_description_url(), dataBean.getTitle());
 
@@ -357,62 +379,15 @@ public class MainScreen extends AppCompatActivity {
         }
     }
 
-
-
-
-    class MyPageAdapter extends FragmentPagerAdapter {
-
-        private List<Fragment> fragments;
-
-
-        public MyPageAdapter(FragmentManager fm, List<Fragment> fragments) {
-
-            super(fm);
-
-            this.fragments = fragments;
-
-        }
-
-        @Override
-
-        public Fragment getItem(int position) {
-
-            return this.fragments.get(position);
-
-        }
-
-
-        @Override
-
-        public int getCount() {
-
-            return this.fragments.size();
-
-        }
-
-    }
-
-
     public void store(int i) {
 
+        database = MainScreen.this.openOrCreateDatabase(Constants.databaseName,MODE_PRIVATE,null);
         if (database != null) {
 
             Cursor cursor = database.rawQuery("select * from '" + Constants.bookmarksTable + "' WHERE article_id = '"
                     +Constants.newsArrayList.get(i).getData().getArticle_id()+"'", null);
 
             if(cursor.getCount() == 0) {
-
-
-                database.execSQL("create table if not exists " + Constants.bookmarksTable + " (category_name text" +
-                        ", article_id text" +
-                        ", title text" +
-                        ", description text" +
-                        ", image_url text" +
-                        ", detail_description_url text" +
-                        ", pubDate text" +
-                        ", localImage text" +
-                        ", startFromHere text)");
-
 
                 ContentValues contentValues = new ContentValues();
 
@@ -449,6 +424,8 @@ public class MainScreen extends AppCompatActivity {
 
             Toast.makeText(getApplicationContext(), "Database Not Found...", Toast.LENGTH_SHORT).show();
         }
+
+        fetchBookMarkIds();
 
     }
 

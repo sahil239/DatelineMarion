@@ -1,17 +1,14 @@
 package com.emoiluj.doubleviewpager;
 
-
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+/**
+ * Created by HP on 24-11-2016.
+ */
 
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.database.DataSetObserver;
 import android.graphics.Canvas;
-import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -28,6 +25,7 @@ import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.VelocityTrackerCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewConfigurationCompat;
+import android.support.v4.view.ViewPager;
 import android.support.v4.view.accessibility.AccessibilityEventCompat;
 import android.support.v4.view.accessibility.AccessibilityNodeInfoCompat;
 import android.support.v4.view.accessibility.AccessibilityRecordCompat;
@@ -48,23 +46,27 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.Interpolator;
 import android.widget.Scroller;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
-public class VerticalViewPager extends ViewGroup {
+public class VPager extends ViewGroup {
 
-    private static final String TAG = "VVV";
-    private static final boolean DEBUG = true;
+    private static final String TAG = "ViewPager";
+    private static final boolean DEBUG = false;
 
     private static final boolean USE_CACHE = false;
 
     private static final int DEFAULT_OFFSCREEN_PAGES = 1;
-    private static final int MAX_SETTLE_DURATION = 600;
-    private static final int MIN_DISTANCE_FOR_FLING = 25;
+    private static final int MAX_SETTLE_DURATION = 600; // ms
+    private static final int MIN_DISTANCE_FOR_FLING = 25; // dips
 
-    private static final int DEFAULT_GUTTER_SIZE = 16;
+    private static final int DEFAULT_GUTTER_SIZE = 16; // dips
 
-    private static final int MIN_FLING_VELOCITY = 400;
+    private static final int MIN_FLING_VELOCITY = 400; // dips
 
-    private static final int[] LAYOUT_ATTRS = new int[] {
+    private static final int[] LAYOUT_ATTRS = new int[]{
             android.R.attr.layout_gravity
     };
 
@@ -78,11 +80,11 @@ public class VerticalViewPager extends ViewGroup {
         Object object;
         int position;
         boolean scrolling;
-        float widthFactor;
+        float heightFactor;
         float offset;
     }
 
-    private static final Comparator<ItemInfo> COMPARATOR = new Comparator<ItemInfo>(){
+    private static final Comparator<ItemInfo> COMPARATOR = new Comparator<ItemInfo>() {
         @Override
         public int compare(ItemInfo lhs, ItemInfo rhs) {
             return lhs.position - rhs.position;
@@ -111,8 +113,8 @@ public class VerticalViewPager extends ViewGroup {
 
     private int mPageMargin;
     private Drawable mMarginDrawable;
-    private int mTopPageBounds;
-    private int mBottomPageBounds;
+    private int mLeftPageBounds;
+    private int mRightPageBounds;
 
     // Offsets of the first and last items, if known.
     // Set during population, used to determine if we are at the beginning
@@ -170,18 +172,18 @@ public class VerticalViewPager extends ViewGroup {
     private boolean mFakeDragging;
     private long mFakeDragBeginTime;
 
-    private EdgeEffectCompat mLeftEdge;
-    private EdgeEffectCompat mRightEdge;
+    private EdgeEffectCompat mTopEdge;
+    private EdgeEffectCompat mBottomEdge;
 
     private boolean mFirstLayout = true;
     private boolean mNeedCalculatePageOffsets = false;
     private boolean mCalledSuper;
     private int mDecorChildCount;
 
-    private OnPageChangeListener mOnPageChangeListener;
-    private OnPageChangeListener mInternalPageChangeListener;
+    private ViewPager.OnPageChangeListener mOnPageChangeListener;
+    private ViewPager.OnPageChangeListener mInternalPageChangeListener;
     private OnAdapterChangeListener mAdapterChangeListener;
-    private ZoomOutTransformer mPageTransformer;
+    private ViewPager.PageTransformer mPageTransformer;
     private Method mSetChildrenDrawingOrderEnabled;
 
     private static final int DRAW_ORDER_DEFAULT = 0;
@@ -217,86 +219,6 @@ public class VerticalViewPager extends ViewGroup {
     private int mScrollState = SCROLL_STATE_IDLE;
 
     /**
-     * Callback interface for responding to changing state of the selected page.
-     */
-    public interface OnPageChangeListener {
-
-        /**
-         * This method will be invoked when the current page is scrolled, either as part
-         * of a programmatically initiated smooth scroll or a user initiated touch scroll.
-         *
-         * @param position Position index of the first page currently being displayed.
-         *                 Page position+1 will be visible if positionOffset is nonzero.
-         * @param positionOffset Value from [0, 1) indicating the offset from the page at position.
-         * @param positionOffsetPixels Value in pixels indicating the offset from position.
-         */
-        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels);
-
-        /**
-         * This method will be invoked when a new page becomes selected. Animation is not
-         * necessarily complete.
-         *
-         * @param position Position index of the new selected page.
-         */
-        public void onPageSelected(int position);
-
-        /**
-         * Called when the scroll state changes. Useful for discovering when the user
-         * begins dragging, when the pager is automatically settling to the current page,
-         * or when it is fully stopped/idle.
-         *
-         * @param state The new scroll state.
-         * @see VerticalViewPager#SCROLL_STATE_IDLE
-         * @see VerticalViewPager#SCROLL_STATE_DRAGGING
-         * @see VerticalViewPager#SCROLL_STATE_SETTLING
-         */
-        public void onPageScrollStateChanged(int state);
-    }
-
-    /**
-     * Simple implementation of the {@link OnPageChangeListener} interface with stub
-     * implementations of each method. Extend this if you do not intend to override
-     * every method of {@link OnPageChangeListener}.
-     */
-    public static class SimpleOnPageChangeListener implements OnPageChangeListener {
-        @Override
-        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-            // This space for rent
-        }
-
-        @Override
-        public void onPageSelected(int position) {
-            // This space for rent
-        }
-
-        @Override
-        public void onPageScrollStateChanged(int state) {
-            // This space for rent
-        }
-    }
-
-    /**
-     * A PageTransformer is invoked whenever a visible/attached page is scrolled.
-     * This offers an opportunity for the application to apply a custom transformation
-     * to the page views using animation properties.
-     *
-     * <p>As property animation is only supported as of Android 3.0 and forward,
-     * setting a PageTransformer on a ViewPager on earlier platform versions will
-     * be ignored.</p>
-     */
-    public interface PageTransformer {
-        /**
-         * Apply a property transformation to the given page.
-         *
-         * @param page Apply the transformation to this page
-         * @param position Position of page relative to the current front-and-center
-         *                 position of the pager. 0 is front and center. 1 is one full
-         *                 page position to the right, and -1 is one page position to the left.
-         */
-        public void transformPage(View page, float position);
-    }
-
-    /**
      * Used internally to monitor when adapters are switched.
      */
     interface OnAdapterChangeListener {
@@ -307,18 +229,17 @@ public class VerticalViewPager extends ViewGroup {
      * Used internally to tag special types of child views that should be added as
      * pager decorations by default.
      */
-    interface Decor {}
-
-    public VerticalViewPager(Context context) {
-        super(context);
-        initViewPager();
-        init();
+    interface Decor {
     }
 
-    public VerticalViewPager(Context context, AttributeSet attrs) {
+    public VPager(Context context) {
+        super(context);
+        initViewPager();
+    }
+
+    public VPager(Context context, AttributeSet attrs) {
         super(context, attrs);
         initViewPager();
-        init();
     }
 
     void initViewPager() {
@@ -333,8 +254,8 @@ public class VerticalViewPager extends ViewGroup {
         mTouchSlop = ViewConfigurationCompat.getScaledPagingTouchSlop(configuration);
         mMinimumVelocity = (int) (MIN_FLING_VELOCITY * density);
         mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
-        mLeftEdge = new EdgeEffectCompat(context);
-        mRightEdge = new EdgeEffectCompat(context);
+        mTopEdge = new EdgeEffectCompat(context);
+        mBottomEdge = new EdgeEffectCompat(context);
 
         mFlingDistance = (int) (MIN_DISTANCE_FOR_FLING * density);
         mCloseEnough = (int) (CLOSE_ENOUGH * density);
@@ -445,9 +366,14 @@ public class VerticalViewPager extends ViewGroup {
         mAdapterChangeListener = listener;
     }
 
-    private int getClientWidth() {
-        return getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
+//    private int getClientWidth() {
+//        return getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
+//    }
+
+    private int getClientHeight() {
+        return getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
     }
+
 
     /**
      * Set the currently selected page. If the ViewPager has already been through its first
@@ -464,7 +390,7 @@ public class VerticalViewPager extends ViewGroup {
     /**
      * Set the currently selected page.
      *
-     * @param item Item index to select
+     * @param item         Item index to select
      * @param smoothScroll True to smoothly scroll to the new item, false to transition immediately
      */
     public void setCurrentItem(int item, boolean smoothScroll) {
@@ -500,7 +426,7 @@ public class VerticalViewPager extends ViewGroup {
             // We are doing a jump by more than one page.  To avoid
             // glitches, we want to keep all current pages in the view
             // until the scroll ends.
-            for (int i=0; i<mItems.size(); i++) {
+            for (int i = 0; i < mItems.size(); i++) {
                 mItems.get(i).scrolling = true;
             }
         }
@@ -526,14 +452,14 @@ public class VerticalViewPager extends ViewGroup {
     private void scrollToItem(int item, boolean smoothScroll, int velocity,
                               boolean dispatchSelected) {
         final ItemInfo curInfo = infoForPosition(item);
-        int destX = 0;
+        int destY = 0;
         if (curInfo != null) {
-            final int width = getClientWidth();
-            destX = (int) (width * Math.max(mFirstOffset,
+            final int height = getClientHeight();
+            destY = (int) (height * Math.max(mFirstOffset,
                     Math.min(curInfo.offset, mLastOffset)));
         }
         if (smoothScroll) {
-            smoothScrollTo(destX, 0, velocity);
+            smoothScrollTo(0, destY, velocity);
             if (dispatchSelected && mOnPageChangeListener != null) {
                 mOnPageChangeListener.onPageSelected(item);
             }
@@ -548,34 +474,34 @@ public class VerticalViewPager extends ViewGroup {
                 mInternalPageChangeListener.onPageSelected(item);
             }
             completeScroll(false);
-            scrollTo(destX, 0);
-            pageScrolled(destX);
+            scrollTo(0, destY);
+            pageScrolled(destY);
         }
     }
 
     /**
      * Set a listener that will be invoked whenever the page changes or is incrementally
-     * scrolled. See {@link OnPageChangeListener}.
+     * scrolled. See {@link android.support.v4.view.ViewPager.OnPageChangeListener}.
      *
      * @param listener Listener to set
      */
-    public void setOnPageChangeListener(OnPageChangeListener listener) {
+    public void setOnPageChangeListener(ViewPager.OnPageChangeListener listener) {
         mOnPageChangeListener = listener;
     }
 
     /**
-     * Set a {@link PageTransformer} that will be called for each attached page whenever
+     * Set a {@link android.support.v4.view.ViewPager.PageTransformer} that will be called for each attached page whenever
      * the scroll position is changed. This allows the application to apply custom property
      * transformations to each page, overriding the default sliding look and feel.
-     *
+     * <p/>
      * <p><em>Note:</em> Prior to Android 3.0 the property animation APIs did not exist.
      * As a result, setting a PageTransformer prior to Android 3.0 (API 11) will have no effect.</p>
      *
      * @param reverseDrawingOrder true if the supplied PageTransformer requires page views
      *                            to be drawn from last to first instead of first to last.
-     * @param transformer PageTransformer that will modify each page's animation properties
+     * @param transformer         PageTransformer that will modify each page's animation properties
      */
-    public void setPageTransformer(boolean reverseDrawingOrder, ZoomOutTransformer transformer) {
+    public void setPageTransformer(boolean reverseDrawingOrder, ViewPager.PageTransformer transformer) {
         if (Build.VERSION.SDK_INT >= 11) {
             final boolean hasTransformer = transformer != null;
             final boolean needsPopulate = hasTransformer != (mPageTransformer != null);
@@ -595,7 +521,7 @@ public class VerticalViewPager extends ViewGroup {
             if (mSetChildrenDrawingOrderEnabled == null) {
                 try {
                     mSetChildrenDrawingOrderEnabled = ViewGroup.class.getDeclaredMethod(
-                            "setChildrenDrawingOrderEnabled", new Class[] { Boolean.TYPE });
+                            "setChildrenDrawingOrderEnabled", new Class[]{Boolean.TYPE});
                 } catch (NoSuchMethodException e) {
                     Log.e(TAG, "Can't find setChildrenDrawingOrderEnabled", e);
                 }
@@ -621,8 +547,8 @@ public class VerticalViewPager extends ViewGroup {
      * @param listener Listener to set
      * @return The old listener that was set, if any.
      */
-    OnPageChangeListener setInternalPageChangeListener(OnPageChangeListener listener) {
-        OnPageChangeListener oldListener = mInternalPageChangeListener;
+    ViewPager.OnPageChangeListener setInternalPageChangeListener(ViewPager.OnPageChangeListener listener) {
+        ViewPager.OnPageChangeListener oldListener = mInternalPageChangeListener;
         mInternalPageChangeListener = listener;
         return oldListener;
     }
@@ -642,14 +568,14 @@ public class VerticalViewPager extends ViewGroup {
      * Set the number of pages that should be retained to either side of the
      * current page in the view hierarchy in an idle state. Pages beyond this
      * limit will be recreated from the adapter when needed.
-     *
+     * <p/>
      * <p>This is offered as an optimization. If you know in advance the number
      * of pages you will need to support or have lazy-loading mechanisms in place
      * on your pages, tweaking this setting can have benefits in perceived smoothness
      * of paging animations and interaction. If you have a small number of pages (3-4)
      * that you can keep active all at once, less time will be spent in layout for
      * newly created view subtrees as the user pages back and forth.</p>
-     *
+     * <p/>
      * <p>You should keep this limit low, especially if your pages have complex layouts.
      * This setting defaults to 1.</p>
      *
@@ -679,8 +605,8 @@ public class VerticalViewPager extends ViewGroup {
         final int oldMargin = mPageMargin;
         mPageMargin = marginPixels;
 
-        final int width = getWidth();
-        recomputeScrollPosition(width, width, marginPixels, oldMargin);
+        final int height = getHeight();
+        recomputeScrollPosition(height, height, marginPixels, oldMargin);
 
         requestLayout();
     }
@@ -752,8 +678,8 @@ public class VerticalViewPager extends ViewGroup {
     /**
      * Like {@link View#scrollBy}, but scroll smoothly instead of immediately.
      *
-     * @param x the number of pixels to scroll by on the X axis
-     * @param y the number of pixels to scroll by on the Y axis
+     * @param x        the number of pixels to scroll by on the X axis
+     * @param y        the number of pixels to scroll by on the Y axis
      * @param velocity the velocity associated with a fling, if applicable. (0 otherwise)
      */
     void smoothScrollTo(int x, int y, int velocity) {
@@ -776,10 +702,10 @@ public class VerticalViewPager extends ViewGroup {
         setScrollingCacheEnabled(true);
         setScrollState(SCROLL_STATE_SETTLING);
 
-        final int width = getClientWidth();
-        final int halfWidth = width / 2;
-        final float distanceRatio = Math.min(1f, 1.0f * Math.abs(dx) / width);
-        final float distance = halfWidth + halfWidth *
+        final int height = getClientHeight();
+        final int halfHeight = height / 2;
+        final float distanceRatio = Math.min(1f, 1.0f * Math.abs(dx) / height);
+        final float distance = halfHeight + halfHeight *
                 distanceInfluenceForSnapDuration(distanceRatio);
 
         int duration = 0;
@@ -787,8 +713,8 @@ public class VerticalViewPager extends ViewGroup {
         if (velocity > 0) {
             duration = 4 * Math.round(1000 * Math.abs(distance / velocity));
         } else {
-            final float pageWidth = width * mAdapter.getPageWidth(mCurItem);
-            final float pageDelta = (float) Math.abs(dx) / (pageWidth + mPageMargin);
+            final float pageHeight = height * mAdapter.getPageWidth(mCurItem);
+            final float pageDelta = (float) Math.abs(dx) / (pageHeight + mPageMargin);
             duration = (int) ((pageDelta + 1) * 100);
         }
         duration = Math.min(duration, MAX_SETTLE_DURATION);
@@ -801,7 +727,7 @@ public class VerticalViewPager extends ViewGroup {
         ItemInfo ii = new ItemInfo();
         ii.position = position;
         ii.object = mAdapter.instantiateItem(this, position);
-        ii.widthFactor = mAdapter.getPageWidth(position);
+        ii.heightFactor = mAdapter.getPageWidth(position);
         if (index < 0 || index >= mItems.size()) {
             mItems.add(ii);
         } else {
@@ -872,7 +798,7 @@ public class VerticalViewPager extends ViewGroup {
                 final View child = getChildAt(i);
                 final LayoutParams lp = (LayoutParams) child.getLayoutParams();
                 if (!lp.isDecor) {
-                    lp.widthFactor = 0.f;
+                    lp.heightFactor = 0.f;
                 }
             }
 
@@ -889,7 +815,7 @@ public class VerticalViewPager extends ViewGroup {
         ItemInfo oldCurInfo = null;
         int focusDirection = View.FOCUS_FORWARD;
         if (mCurItem != newCurrentItem) {
-            focusDirection = mCurItem < newCurrentItem ? View.FOCUS_RIGHT : View.FOCUS_LEFT;
+            focusDirection = mCurItem < newCurrentItem ? View.FOCUS_DOWN : View.FOCUS_UP;
             oldCurInfo = infoForPosition(mCurItem);
             mCurItem = newCurrentItem;
         }
@@ -921,7 +847,7 @@ public class VerticalViewPager extends ViewGroup {
         final int pageLimit = mOffscreenPageLimit;
         final int startPos = Math.max(0, mCurItem - pageLimit);
         final int N = mAdapter.getCount();
-        final int endPos = Math.min(N-1, mCurItem + pageLimit);
+        final int endPos = Math.min(N - 1, mCurItem + pageLimit);
 
         if (N != mExpectedAdapterCount) {
             String resName;
@@ -957,14 +883,14 @@ public class VerticalViewPager extends ViewGroup {
         // pages requested to either side, whichever is larger.
         // If we have no current item we have no work to do.
         if (curItem != null) {
-            float extraWidthLeft = 0.f;
+            float extraHeightTop = 0.f;
             int itemIndex = curIndex - 1;
             ItemInfo ii = itemIndex >= 0 ? mItems.get(itemIndex) : null;
-            final int clientWidth = getClientWidth();
-            final float leftWidthNeeded = clientWidth <= 0 ? 0 :
-                    2.f - curItem.widthFactor + (float) getPaddingLeft() / (float) clientWidth;
+            final int clientHeight = getClientHeight();
+            final float topHeightNeeded = clientHeight <= 0 ? 0 :
+                    2.f - curItem.heightFactor + (float) getPaddingLeft() / (float) clientHeight;
             for (int pos = mCurItem - 1; pos >= 0; pos--) {
-                if (extraWidthLeft >= leftWidthNeeded && pos < startPos) {
+                if (extraHeightTop >= topHeightNeeded && pos < startPos) {
                     if (ii == null) {
                         break;
                     }
@@ -980,25 +906,25 @@ public class VerticalViewPager extends ViewGroup {
                         ii = itemIndex >= 0 ? mItems.get(itemIndex) : null;
                     }
                 } else if (ii != null && pos == ii.position) {
-                    extraWidthLeft += ii.widthFactor;
+                    extraHeightTop += ii.heightFactor;
                     itemIndex--;
                     ii = itemIndex >= 0 ? mItems.get(itemIndex) : null;
                 } else {
                     ii = addNewItem(pos, itemIndex + 1);
-                    extraWidthLeft += ii.widthFactor;
+                    extraHeightTop += ii.heightFactor;
                     curIndex++;
                     ii = itemIndex >= 0 ? mItems.get(itemIndex) : null;
                 }
             }
 
-            float extraWidthRight = curItem.widthFactor;
+            float extraHeightBottom = curItem.heightFactor;
             itemIndex = curIndex + 1;
-            if (extraWidthRight < 2.f) {
+            if (extraHeightBottom < 2.f) {
                 ii = itemIndex < mItems.size() ? mItems.get(itemIndex) : null;
-                final float rightWidthNeeded = clientWidth <= 0 ? 0 :
-                        (float) getPaddingRight() / (float) clientWidth + 2.f;
+                final float bottomHeightNeeded = clientHeight <= 0 ? 0 :
+                        (float) getPaddingRight() / (float) clientHeight + 2.f;
                 for (int pos = mCurItem + 1; pos < N; pos++) {
-                    if (extraWidthRight >= rightWidthNeeded && pos > endPos) {
+                    if (extraHeightBottom >= bottomHeightNeeded && pos > endPos) {
                         if (ii == null) {
                             break;
                         }
@@ -1012,13 +938,13 @@ public class VerticalViewPager extends ViewGroup {
                             ii = itemIndex < mItems.size() ? mItems.get(itemIndex) : null;
                         }
                     } else if (ii != null && pos == ii.position) {
-                        extraWidthRight += ii.widthFactor;
+                        extraHeightBottom += ii.heightFactor;
                         itemIndex++;
                         ii = itemIndex < mItems.size() ? mItems.get(itemIndex) : null;
                     } else {
                         ii = addNewItem(pos, itemIndex);
                         itemIndex++;
-                        extraWidthRight += ii.widthFactor;
+                        extraHeightBottom += ii.heightFactor;
                         ii = itemIndex < mItems.size() ? mItems.get(itemIndex) : null;
                     }
                 }
@@ -1029,7 +955,7 @@ public class VerticalViewPager extends ViewGroup {
 
         if (DEBUG) {
             Log.i(TAG, "Current page list:");
-            for (int i=0; i<mItems.size(); i++) {
+            for (int i = 0; i < mItems.size(); i++) {
                 Log.i(TAG, "#" + i + ": page " + mItems.get(i).position);
             }
         }
@@ -1045,11 +971,11 @@ public class VerticalViewPager extends ViewGroup {
             final View child = getChildAt(i);
             final LayoutParams lp = (LayoutParams) child.getLayoutParams();
             lp.childIndex = i;
-            if (!lp.isDecor && lp.widthFactor == 0.f) {
+            if (!lp.isDecor && lp.heightFactor == 0.f) {
                 // 0 means requery the adapter for this, it doesn't have a valid width.
                 final ItemInfo ii = infoForChild(child);
                 if (ii != null) {
-                    lp.widthFactor = ii.widthFactor;
+                    lp.heightFactor = ii.heightFactor;
                     lp.position = ii.position;
                 }
             }
@@ -1060,7 +986,7 @@ public class VerticalViewPager extends ViewGroup {
             View currentFocused = findFocus();
             ItemInfo ii = currentFocused != null ? infoForAnyChild(currentFocused) : null;
             if (ii == null || ii.position != mCurItem) {
-                for (int i=0; i<getChildCount(); i++) {
+                for (int i = 0; i < getChildCount(); i++) {
                     View child = getChildAt(i);
                     ii = infoForChild(child);
                     if (ii != null && ii.position == mCurItem) {
@@ -1091,8 +1017,8 @@ public class VerticalViewPager extends ViewGroup {
 
     private void calculatePageOffsets(ItemInfo curItem, int curIndex, ItemInfo oldCurInfo) {
         final int N = mAdapter.getCount();
-        final int width = getClientWidth();
-        final float marginOffset = width > 0 ? (float) mPageMargin / width : 0;
+        final int height = getClientHeight();
+        final float marginOffset = height > 0 ? (float) mPageMargin / height : 0;
         // Fix up offsets for later layout.
         if (oldCurInfo != null) {
             final int oldCurPosition = oldCurInfo.position;
@@ -1100,7 +1026,7 @@ public class VerticalViewPager extends ViewGroup {
             if (oldCurPosition < curItem.position) {
                 int itemIndex = 0;
                 ItemInfo ii = null;
-                float offset = oldCurInfo.offset + oldCurInfo.widthFactor + marginOffset;
+                float offset = oldCurInfo.offset + oldCurInfo.heightFactor + marginOffset;
                 for (int pos = oldCurPosition + 1;
                      pos <= curItem.position && itemIndex < mItems.size(); pos++) {
                     ii = mItems.get(itemIndex);
@@ -1115,7 +1041,7 @@ public class VerticalViewPager extends ViewGroup {
                         pos++;
                     }
                     ii.offset = offset;
-                    offset += ii.widthFactor + marginOffset;
+                    offset += ii.heightFactor + marginOffset;
                 }
             } else if (oldCurPosition > curItem.position) {
                 int itemIndex = mItems.size() - 1;
@@ -1134,7 +1060,7 @@ public class VerticalViewPager extends ViewGroup {
                         offset -= mAdapter.getPageWidth(pos) + marginOffset;
                         pos--;
                     }
-                    offset -= ii.widthFactor + marginOffset;
+                    offset -= ii.heightFactor + marginOffset;
                     ii.offset = offset;
                 }
             }
@@ -1146,18 +1072,18 @@ public class VerticalViewPager extends ViewGroup {
         int pos = curItem.position - 1;
         mFirstOffset = curItem.position == 0 ? curItem.offset : -Float.MAX_VALUE;
         mLastOffset = curItem.position == N - 1 ?
-                curItem.offset + curItem.widthFactor - 1 : Float.MAX_VALUE;
+                curItem.offset + curItem.heightFactor - 1 : Float.MAX_VALUE;
         // Previous pages
         for (int i = curIndex - 1; i >= 0; i--, pos--) {
             final ItemInfo ii = mItems.get(i);
             while (pos > ii.position) {
                 offset -= mAdapter.getPageWidth(pos--) + marginOffset;
             }
-            offset -= ii.widthFactor + marginOffset;
+            offset -= ii.heightFactor + marginOffset;
             ii.offset = offset;
             if (ii.position == 0) mFirstOffset = offset;
         }
-        offset = curItem.offset + curItem.widthFactor + marginOffset;
+        offset = curItem.offset + curItem.heightFactor + marginOffset;
         pos = curItem.position + 1;
         // Next pages
         for (int i = curIndex + 1; i < itemCount; i++, pos++) {
@@ -1166,10 +1092,10 @@ public class VerticalViewPager extends ViewGroup {
                 offset += mAdapter.getPageWidth(pos++) + marginOffset;
             }
             if (ii.position == N - 1) {
-                mLastOffset = offset + ii.widthFactor - 1;
+                mLastOffset = offset + ii.heightFactor - 1;
             }
             ii.offset = offset;
-            offset += ii.widthFactor + marginOffset;
+            offset += ii.heightFactor + marginOffset;
         }
 
         mNeedCalculatePageOffsets = false;
@@ -1204,12 +1130,13 @@ public class VerticalViewPager extends ViewGroup {
                     + " position=" + position + "}";
         }
 
-        public static final Creator<SavedState> CREATOR
+        public static final Parcelable.Creator<SavedState> CREATOR
                 = ParcelableCompat.newCreator(new ParcelableCompatCreatorCallbacks<SavedState>() {
             @Override
             public SavedState createFromParcel(Parcel in, ClassLoader loader) {
                 return new SavedState(in, loader);
             }
+
             @Override
             public SavedState[] newArray(int size) {
                 return new SavedState[size];
@@ -1245,7 +1172,7 @@ public class VerticalViewPager extends ViewGroup {
             return;
         }
 
-        SavedState ss = (SavedState)state;
+        SavedState ss = (SavedState) state;
         super.onRestoreInstanceState(ss.getSuperState());
 
         if (mAdapter != null) {
@@ -1294,7 +1221,7 @@ public class VerticalViewPager extends ViewGroup {
     }
 
     ItemInfo infoForChild(View child) {
-        for (int i=0; i<mItems.size(); i++) {
+        for (int i = 0; i < mItems.size(); i++) {
             ItemInfo ii = mItems.get(i);
             if (mAdapter.isViewFromObject(child, ii.object)) {
                 return ii;
@@ -1305,11 +1232,11 @@ public class VerticalViewPager extends ViewGroup {
 
     ItemInfo infoForAnyChild(View child) {
         ViewParent parent;
-        while ((parent=child.getParent()) != this) {
+        while ((parent = child.getParent()) != this) {
             if (parent == null || !(parent instanceof View)) {
                 return null;
             }
-            child = (View)parent;
+            child = (View) parent;
         }
         return infoForChild(child);
     }
@@ -1340,13 +1267,13 @@ public class VerticalViewPager extends ViewGroup {
         setMeasuredDimension(getDefaultSize(0, widthMeasureSpec),
                 getDefaultSize(0, heightMeasureSpec));
 
-        final int measuredWidth = getMeasuredWidth();
-        final int maxGutterSize = measuredWidth / 10;
+        final int measuredHeight = getMeasuredHeight();
+        final int maxGutterSize = measuredHeight / 10;
         mGutterSize = Math.min(maxGutterSize, mDefaultGutterSize);
 
         // Children are just made to fill our space.
-        int childWidthSize = measuredWidth - getPaddingLeft() - getPaddingRight();
-        int childHeightSize = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
+        int childWidthSize = getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
+        int childHeightSize = measuredHeight - getPaddingTop() - getPaddingBottom();
 
         /*
          * Make sure all children have been properly measured. Decor views first.
@@ -1416,10 +1343,10 @@ public class VerticalViewPager extends ViewGroup {
                         + ": " + mChildWidthMeasureSpec);
 
                 final LayoutParams lp = (LayoutParams) child.getLayoutParams();
-                if (lp != null && !lp.isDecor) {
-                    final int widthSpec = MeasureSpec.makeMeasureSpec(
-                            (int) (childWidthSize * lp.widthFactor), MeasureSpec.EXACTLY);
-                    child.measure(widthSpec, mChildHeightMeasureSpec);
+                if (lp == null || !lp.isDecor) {
+                    final int heightSpec = MeasureSpec.makeMeasureSpec(
+                            (int) (childHeightSize * lp.heightFactor), MeasureSpec.EXACTLY);
+                    child.measure(mChildWidthMeasureSpec, heightSpec);
                 }
             }
         }
@@ -1430,36 +1357,36 @@ public class VerticalViewPager extends ViewGroup {
         super.onSizeChanged(w, h, oldw, oldh);
 
         // Make sure scroll position is set correctly.
-        if (w != oldw) {
-            recomputeScrollPosition(w, oldw, mPageMargin, mPageMargin);
+        if (h != oldh) {
+            recomputeScrollPosition(h, oldh, mPageMargin, mPageMargin);
         }
     }
 
-    private void recomputeScrollPosition(int width, int oldWidth, int margin, int oldMargin) {
-        if (oldWidth > 0 && !mItems.isEmpty()) {
-            final int widthWithMargin = width - getPaddingLeft() - getPaddingRight() + margin;
-            final int oldWidthWithMargin = oldWidth - getPaddingLeft() - getPaddingRight()
+    private void recomputeScrollPosition(int height, int oldHeight, int margin, int oldMargin) {
+        if (oldHeight > 0 && !mItems.isEmpty()) {
+            final int heightWithMargin = height - getPaddingTop() - getPaddingBottom() + margin;
+            final int oldHeightWithMargin = oldHeight - getPaddingTop() - getPaddingBottom()
                     + oldMargin;
-            final int xpos = getScrollX();
-            final float pageOffset = (float) xpos / oldWidthWithMargin;
-            final int newOffsetPixels = (int) (pageOffset * widthWithMargin);
+            final int ypos = getScrollY();
+            final float pageOffset = (float) ypos / oldHeightWithMargin;
+            final int newOffsetPixels = (int) (pageOffset * heightWithMargin);
 
-            scrollTo(newOffsetPixels, getScrollY());
+            scrollTo(getScrollX(), newOffsetPixels);
             if (!mScroller.isFinished()) {
                 // We now return to your regularly scheduled scroll, already in progress.
                 final int newDuration = mScroller.getDuration() - mScroller.timePassed();
                 ItemInfo targetInfo = infoForPosition(mCurItem);
-                mScroller.startScroll(newOffsetPixels, 0,
-                        (int) (targetInfo.offset * width), 0, newDuration);
+                mScroller.startScroll(0, newOffsetPixels,
+                        0, (int) (targetInfo.offset * height), newDuration);
             }
         } else {
             final ItemInfo ii = infoForPosition(mCurItem);
             final float scrollOffset = ii != null ? Math.min(ii.offset, mLastOffset) : 0;
             final int scrollPos = (int) (scrollOffset *
-                    (width - getPaddingLeft() - getPaddingRight()));
-            if (scrollPos != getScrollX()) {
+                    (height - getPaddingTop() - getPaddingBottom()));
+            if (scrollPos != getScrollY()) {
                 completeScroll(false);
-                scrollTo(scrollPos, getScrollY());
+                scrollTo(getScrollX(), scrollPos);
             }
         }
     }
@@ -1473,7 +1400,7 @@ public class VerticalViewPager extends ViewGroup {
         int paddingTop = getPaddingTop();
         int paddingRight = getPaddingRight();
         int paddingBottom = getPaddingBottom();
-        final int scrollX = getScrollX();
+        final int scrollY = getScrollY();
 
         int decorCount = 0;
 
@@ -1522,7 +1449,7 @@ public class VerticalViewPager extends ViewGroup {
                             paddingBottom += child.getMeasuredHeight();
                             break;
                     }
-                    childLeft += scrollX;
+                    childTop += scrollY;
                     child.layout(childLeft, childTop,
                             childLeft + child.getMeasuredWidth(),
                             childTop + child.getMeasuredHeight());
@@ -1531,7 +1458,7 @@ public class VerticalViewPager extends ViewGroup {
             }
         }
 
-        final int childWidth = width - paddingLeft - paddingRight;
+        final int childHeight = height - paddingTop - paddingBottom;
         // Page views. Do this once we have the right padding offsets from above.
         for (int i = 0; i < count; i++) {
             final View child = getChildAt(i);
@@ -1539,18 +1466,18 @@ public class VerticalViewPager extends ViewGroup {
                 final LayoutParams lp = (LayoutParams) child.getLayoutParams();
                 ItemInfo ii;
                 if (!lp.isDecor && (ii = infoForChild(child)) != null) {
-                    int loff = (int) (childWidth * ii.offset);
-                    int childLeft = paddingLeft + loff;
-                    int childTop = paddingTop;
+                    int toff = (int) (childHeight * ii.offset);
+                    int childLeft = paddingLeft;
+                    int childTop = paddingTop + toff;
                     if (lp.needsMeasure) {
                         // This was added during layout and needs measurement.
                         // Do it now that we know what we're working with.
                         lp.needsMeasure = false;
                         final int widthSpec = MeasureSpec.makeMeasureSpec(
-                                (int) (childWidth * lp.widthFactor),
+                                (int) (width - paddingLeft - paddingRight),
                                 MeasureSpec.EXACTLY);
                         final int heightSpec = MeasureSpec.makeMeasureSpec(
-                                (int) (height - paddingTop - paddingBottom),
+                                (int) (childHeight * lp.heightFactor),
                                 MeasureSpec.EXACTLY);
                         child.measure(widthSpec, heightSpec);
                     }
@@ -1563,8 +1490,8 @@ public class VerticalViewPager extends ViewGroup {
                 }
             }
         }
-        mTopPageBounds = paddingTop;
-        mBottomPageBounds = height - paddingBottom;
+        mLeftPageBounds = paddingLeft;
+        mRightPageBounds = width - paddingRight;
         mDecorChildCount = decorCount;
 
         if (mFirstLayout) {
@@ -1583,9 +1510,9 @@ public class VerticalViewPager extends ViewGroup {
 
             if (oldX != x || oldY != y) {
                 scrollTo(x, y);
-                if (!pageScrolled(x)) {
+                if (!pageScrolled(y)) {
                     mScroller.abortAnimation();
-                    scrollTo(0, y);
+                    scrollTo(x, 0);
                 }
             }
 
@@ -1598,7 +1525,7 @@ public class VerticalViewPager extends ViewGroup {
         completeScroll(true);
     }
 
-    private boolean pageScrolled(int xpos) {
+    private boolean pageScrolled(int ypos) {
         if (mItems.size() == 0) {
             mCalledSuper = false;
             onPageScrolled(0, 0, 0);
@@ -1609,13 +1536,13 @@ public class VerticalViewPager extends ViewGroup {
             return false;
         }
         final ItemInfo ii = infoForCurrentScrollPosition();
-        final int width = getClientWidth();
-        final int widthWithMargin = width + mPageMargin;
-        final float marginOffset = (float) mPageMargin / width;
+        final int height = getClientHeight();
+        final int heightWithMargin = height + mPageMargin;
+        final float marginOffset = (float) mPageMargin / height;
         final int currentPage = ii.position;
-        final float pageOffset = (((float) xpos / width) - ii.offset) /
-                (ii.widthFactor + marginOffset);
-        final int offsetPixels = (int) (pageOffset * widthWithMargin);
+        final float pageOffset = (((float) ypos / height) - ii.offset) /
+                (ii.heightFactor + marginOffset);
+        final int offsetPixels = (int) (pageOffset * heightWithMargin);
 
         mCalledSuper = false;
         onPageScrolled(currentPage, pageOffset, offsetPixels);
@@ -1633,48 +1560,48 @@ public class VerticalViewPager extends ViewGroup {
      * (e.g. super.onPageScrolled(position, offset, offsetPixels)) before onPageScrolled
      * returns.
      *
-     * @param position Position index of the first page currently being displayed.
-     *                 Page position+1 will be visible if positionOffset is nonzero.
-     * @param offset Value from [0, 1) indicating the offset from the page at position.
+     * @param position     Position index of the first page currently being displayed.
+     *                     Page position+1 will be visible if positionOffset is nonzero.
+     * @param offset       Value from [0, 1) indicating the offset from the page at position.
      * @param offsetPixels Value in pixels indicating the offset from position.
      */
     protected void onPageScrolled(int position, float offset, int offsetPixels) {
         // Offset any decor views if needed - keep them on-screen at all times.
         if (mDecorChildCount > 0) {
-            final int scrollX = getScrollX();
-            int paddingLeft = getPaddingLeft();
-            int paddingRight = getPaddingRight();
-            final int width = getWidth();
+            final int scrollY = getScrollY();
+            int paddingTop = getPaddingTop();
+            int paddingBottom = getPaddingBottom();
+            final int height = getHeight();
             final int childCount = getChildCount();
             for (int i = 0; i < childCount; i++) {
                 final View child = getChildAt(i);
                 final LayoutParams lp = (LayoutParams) child.getLayoutParams();
                 if (!lp.isDecor) continue;
 
-                final int hgrav = lp.gravity & Gravity.HORIZONTAL_GRAVITY_MASK;
-                int childLeft = 0;
-                switch (hgrav) {
+                final int vgrav = lp.gravity & Gravity.VERTICAL_GRAVITY_MASK;
+                int childTop = 0;
+                switch (vgrav) {
                     default:
-                        childLeft = paddingLeft;
+                        childTop = paddingTop;
                         break;
-                    case Gravity.LEFT:
-                        childLeft = paddingLeft;
-                        paddingLeft += child.getWidth();
+                    case Gravity.TOP:
+                        childTop = paddingTop;
+                        paddingTop += child.getHeight();
                         break;
-                    case Gravity.CENTER_HORIZONTAL:
-                        childLeft = Math.max((width - child.getMeasuredWidth()) / 2,
-                                paddingLeft);
+                    case Gravity.CENTER_VERTICAL:
+                        childTop = Math.max((height - child.getMeasuredHeight()) / 2,
+                                paddingTop);
                         break;
-                    case Gravity.RIGHT:
-                        childLeft = width - paddingRight - child.getMeasuredWidth();
-                        paddingRight += child.getMeasuredWidth();
+                    case Gravity.BOTTOM:
+                        childTop = height - paddingBottom - child.getMeasuredHeight();
+                        paddingBottom += child.getMeasuredHeight();
                         break;
                 }
-                childLeft += scrollX;
+                childTop += scrollY;
 
-                final int childOffset = childLeft - child.getLeft();
+                final int childOffset = childTop - child.getTop();
                 if (childOffset != 0) {
-                    child.offsetLeftAndRight(childOffset);
+                    child.offsetTopAndBottom(childOffset);
                 }
             }
         }
@@ -1687,7 +1614,7 @@ public class VerticalViewPager extends ViewGroup {
         }
 
         if (mPageTransformer != null) {
-            final int scrollX = getScrollX();
+            final int scrollY = getScrollY();
             final int childCount = getChildCount();
             for (int i = 0; i < childCount; i++) {
                 final View child = getChildAt(i);
@@ -1695,7 +1622,7 @@ public class VerticalViewPager extends ViewGroup {
 
                 if (lp.isDecor) continue;
 
-                final float transformPos = (float) (child.getLeft() - scrollX) / getClientWidth();
+                final float transformPos = (float) (child.getTop() - scrollY) / getClientHeight();
                 mPageTransformer.transformPage(child, transformPos);
             }
         }
@@ -1718,7 +1645,7 @@ public class VerticalViewPager extends ViewGroup {
             }
         }
         mPopulatePending = false;
-        for (int i=0; i<mItems.size(); i++) {
+        for (int i = 0; i < mItems.size(); i++) {
             ItemInfo ii = mItems.get(i);
             if (ii.scrolling) {
                 needPopulate = true;
@@ -1734,12 +1661,8 @@ public class VerticalViewPager extends ViewGroup {
         }
     }
 
-    private boolean isGutterDrag(float x, float dx) {
-//    	mGutterSize=150;
-//    	boolean valor=(x < mGutterSize && dx > 0) || (x > getHeight() - mGutterSize && dx < 0);
-//        return (x < mGutterSize && dx > 0) || (x > getHeight() - mGutterSize && dx < 0);
-        //Permite pasar con o no entre imagenes cuando estamos en ZOOM ZOOM ZOOM
-        return false;
+    private boolean isGutterDrag(float y, float dy) {
+        return (y < mGutterSize && dy > 0) || (y > getHeight() - mGutterSize && dy < 0);
     }
 
     private void enableLayers(boolean enable) {
@@ -1753,21 +1676,16 @@ public class VerticalViewPager extends ViewGroup {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        //TODO
-    	
         /*
          * This method JUST determines whether we want to intercept the motion.
          * If we return true, onMotionEvent will be called and we do the actual
          * scrolling there.
          */
-        PointF oldEv=new PointF(ev.getX(), ev.getY());
-        ev.setLocation(oldEv.y, oldEv.x);
 
         final int action = ev.getAction() & MotionEventCompat.ACTION_MASK;
 
         // Always take care of the touch gesture being complete.
         if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
-            if (DEBUG) Log.i(TAG, "I - CANCEL - UP");
             // Release the drag.
             if (DEBUG) Log.v(TAG, "Intercept done!");
             mIsBeingDragged = false;
@@ -1777,30 +1695,25 @@ public class VerticalViewPager extends ViewGroup {
                 mVelocityTracker.recycle();
                 mVelocityTracker = null;
             }
-            ev.setLocation(oldEv.x, oldEv.y);
             return false;
         }
 
         // Nothing more to do here if we have decided whether or not we
         // are dragging.
         if (action != MotionEvent.ACTION_DOWN) {
-            if (DEBUG) Log.i(TAG, "I - DOWN");
             if (mIsBeingDragged) {
                 if (DEBUG) Log.v(TAG, "Intercept returning true!");
                 return true;
             }
             if (mIsUnableToDrag) {
                 if (DEBUG) Log.v(TAG, "Intercept returning false!");
-                ev.setLocation(oldEv.x, oldEv.y);
                 return false;
             }
         }
 
         switch (action) {
             case MotionEvent.ACTION_MOVE: {
-
-                if (DEBUG) Log.i(TAG, "I - DOWN");
-            	/*
+                /*
                  * mIsBeingDragged == false, otherwise the shortcut would have caught it. Check
                  * whether the user has moved far enough from his original down touch.
                  */
@@ -1816,40 +1729,31 @@ public class VerticalViewPager extends ViewGroup {
                 }
 
                 final int pointerIndex = MotionEventCompat.findPointerIndex(ev, activePointerId);
-                final float x = MotionEventCompat.getX(ev, pointerIndex);
-                final float dx = x - mLastMotionX;
-                final float xDiff = Math.abs(dx);
                 final float y = MotionEventCompat.getY(ev, pointerIndex);
-                final float yDiff = Math.abs(y - mInitialMotionY);
+                final float dy = y - mLastMotionY;
+                final float yDiff = Math.abs(dy);
+                final float x = MotionEventCompat.getX(ev, pointerIndex);
+                final float xDiff = Math.abs(x - mInitialMotionX);
                 if (DEBUG) Log.v(TAG, "Moved x to " + x + "," + y + " diff=" + xDiff + "," + yDiff);
-                if (DEBUG) Log.v(TAG, "y:"+y + "lastmotiony"+mLastMotionY+"mInitialy"+mInitialMotionY);
 
-                if (dx != 0 && !isGutterDrag(mLastMotionX, dx) &&
-                        canScroll(this, false, (int) dx, (int) x, (int) y)) {
+                if (dy != 0 && !isGutterDrag(mLastMotionY, dy) &&
+                        canScroll(this, false, (int) dy, (int) x, (int) y)) {
                     // Nested view has scrollable area under this point. Let it be handled there.
                     mLastMotionX = x;
                     mLastMotionY = y;
                     mIsUnableToDrag = true;
-                    ev.setLocation(oldEv.x, oldEv.y);
                     return false;
                 }
-                if (xDiff > mTouchSlop && xDiff * 0.5f > yDiff) {
+                if (yDiff > mTouchSlop && yDiff * 0.5f > xDiff) {
                     if (DEBUG) Log.v(TAG, "Starting drag!");
                     mIsBeingDragged = true;
                     requestParentDisallowInterceptTouchEvent(true);
                     setScrollState(SCROLL_STATE_DRAGGING);
-                    mLastMotionX = dx > 0 ? mInitialMotionX + mTouchSlop :
-                            mInitialMotionX - mTouchSlop;
-                    mLastMotionY = y;
+                    mLastMotionY = dy > 0 ? mInitialMotionY + mTouchSlop :
+                            mInitialMotionY - mTouchSlop;
+                    mLastMotionX = x;
                     setScrollingCacheEnabled(true);
-
-                } else if (yDiff > mTouchSlop && yDiff * 0.5 > xDiff) {
-                    if(getParent() instanceof HorizontalViewPager){
-                        HorizontalViewPager parent = (HorizontalViewPager) getParent();
-                        parent.setmActivePointerId(mActivePointerId);
-                        ev.setLocation(oldEv.y, oldEv.x);
-                        parent.onTouchEvent(ev);
-                    }
+                } else if (xDiff > mTouchSlop) {
                     // The finger has moved enough in the vertical
                     // direction to be counted as a drag...  abort
                     // any attempt to drag horizontally, to work correctly
@@ -1859,7 +1763,7 @@ public class VerticalViewPager extends ViewGroup {
                 }
                 if (mIsBeingDragged) {
                     // Scroll to follow the motion event
-                    if (performDrag(x)) {
+                    if (performDrag(y)) {
                         ViewCompat.postInvalidateOnAnimation(this);
                     }
                 }
@@ -1867,9 +1771,7 @@ public class VerticalViewPager extends ViewGroup {
             }
 
             case MotionEvent.ACTION_DOWN: {
-
-                if (DEBUG) Log.i(TAG, "I - DOWN2");
-            	/*
+                /*
                  * Remember location of down touch.
                  * ACTION_DOWN always refers to pointer index 0.
                  */
@@ -1880,7 +1782,7 @@ public class VerticalViewPager extends ViewGroup {
 
                 mScroller.computeScrollOffset();
                 if (mScrollState == SCROLL_STATE_SETTLING &&
-                        Math.abs(mScroller.getFinalX() - mScroller.getCurrX()) > mCloseEnough) {
+                        Math.abs(mScroller.getFinalY() - mScroller.getCurrY()) > mCloseEnough) {
                     // Let the user 'catch' the pager as it animates.
                     mScroller.abortAnimation();
                     mPopulatePending = false;
@@ -1900,7 +1802,6 @@ public class VerticalViewPager extends ViewGroup {
             }
 
             case MotionEventCompat.ACTION_POINTER_UP:
-                if (DEBUG) Log.i(TAG, "I - POINTER UP");
                 onSecondaryPointerUp(ev);
                 break;
         }
@@ -1914,17 +1815,11 @@ public class VerticalViewPager extends ViewGroup {
          * The only time we want to intercept motion events is if we are in the
          * drag mode.
          */
-
-        if(!mIsBeingDragged){
-            ev.setLocation(oldEv.x, oldEv.y);
-        }
         return mIsBeingDragged;
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        //TODO ONTOUCHEVENT
-
         if (mFakeDragging) {
             // A fake drag is in progress already, ignore this real one
             // but still eat the touch events.
@@ -1943,22 +1838,16 @@ public class VerticalViewPager extends ViewGroup {
             return false;
         }
 
-        PointF oldPoint=new PointF(ev.getX(), ev.getY());
-        ev.setLocation(oldPoint.y, oldPoint.x);
-
         if (mVelocityTracker == null) {
             mVelocityTracker = VelocityTracker.obtain();
         }
-
         mVelocityTracker.addMovement(ev);
 
         final int action = ev.getAction();
         boolean needsInvalidate = false;
 
         switch (action & MotionEventCompat.ACTION_MASK) {
-
             case MotionEvent.ACTION_DOWN: {
-                if (DEBUG) Log.i(TAG, "T - DOWN");
                 mScroller.abortAnimation();
                 mPopulatePending = false;
                 populate();
@@ -1969,24 +1858,22 @@ public class VerticalViewPager extends ViewGroup {
                 mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
                 break;
             }
-
             case MotionEvent.ACTION_MOVE:
-                if (DEBUG) Log.i(TAG, "T - MOVE");
                 if (!mIsBeingDragged) {
                     final int pointerIndex = MotionEventCompat.findPointerIndex(ev, mActivePointerId);
-                    final float x = MotionEventCompat.getX(ev, pointerIndex);
-                    final float xDiff = Math.abs(x - mLastMotionX);
                     final float y = MotionEventCompat.getY(ev, pointerIndex);
                     final float yDiff = Math.abs(y - mLastMotionY);
-                    if (DEBUG) Log.v(TAG, "Moved x to " + x + "," + y + " diff=" + xDiff + "," + yDiff);
-
-                    if (xDiff > mTouchSlop && xDiff > yDiff) {
+                    final float x = MotionEventCompat.getX(ev, pointerIndex);
+                    final float xDiff = Math.abs(x - mLastMotionX);
+                    if (DEBUG)
+                        Log.v(TAG, "Moved x to " + x + "," + y + " diff=" + xDiff + "," + yDiff);
+                    if (yDiff > mTouchSlop && yDiff > xDiff) {
                         if (DEBUG) Log.v(TAG, "Starting drag!");
                         mIsBeingDragged = true;
                         requestParentDisallowInterceptTouchEvent(true);
-                        mLastMotionX = x - mInitialMotionX > 0 ? mInitialMotionX + mTouchSlop :
-                                mInitialMotionX - mTouchSlop;
-                        mLastMotionY = y;
+                        mLastMotionY = y - mInitialMotionY > 0 ? mInitialMotionY + mTouchSlop :
+                                mInitialMotionY - mTouchSlop;
+                        mLastMotionX = x;
                         setScrollState(SCROLL_STATE_DRAGGING);
                         setScrollingCacheEnabled(true);
 
@@ -1995,15 +1882,6 @@ public class VerticalViewPager extends ViewGroup {
                         if (parent != null) {
                             parent.requestDisallowInterceptTouchEvent(true);
                         }
-
-                    }else if (yDiff > mTouchSlop && yDiff > xDiff){
-                        if(getParent() instanceof HorizontalViewPager){
-                            HorizontalViewPager parent = (HorizontalViewPager) getParent();
-                            parent.setmActivePointerId(mActivePointerId);
-                            ev.setLocation(y, x);
-                            parent.onTouchEvent(ev);
-                            break;
-                        }
                     }
                 }
                 // Not else! Note that mIsBeingDragged can be set above.
@@ -2011,62 +1889,53 @@ public class VerticalViewPager extends ViewGroup {
                     // Scroll to follow the motion event
                     final int activePointerIndex = MotionEventCompat.findPointerIndex(
                             ev, mActivePointerId);
-                    final float x = MotionEventCompat.getX(ev, activePointerIndex);
-                    needsInvalidate |= performDrag(x);
+                    final float y = MotionEventCompat.getY(ev, activePointerIndex);
+                    needsInvalidate |= performDrag(y);
                 }
                 break;
-
             case MotionEvent.ACTION_UP:
-                if (DEBUG) Log.i(TAG, "T - UP");
                 if (mIsBeingDragged) {
                     final VelocityTracker velocityTracker = mVelocityTracker;
                     velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
-                    int initialVelocity = (int) VelocityTrackerCompat.getXVelocity(
+                    int initialVelocity = (int) VelocityTrackerCompat.getYVelocity(
                             velocityTracker, mActivePointerId);
                     mPopulatePending = true;
-                    final int width = getClientWidth();
-                    final int scrollX = getScrollX();
+                    final int height = getClientHeight();
+                    final int scrollY = getScrollY();
                     final ItemInfo ii = infoForCurrentScrollPosition();
                     final int currentPage = ii.position;
-                    final float pageOffset = (((float) scrollX / width) - ii.offset) / ii.widthFactor;
+                    final float pageOffset = (((float) scrollY / height) - ii.offset) / ii.heightFactor;
                     final int activePointerIndex =
                             MotionEventCompat.findPointerIndex(ev, mActivePointerId);
-                    final float x = MotionEventCompat.getX(ev, activePointerIndex);
-                    final int totalDelta = (int) (x - mInitialMotionX);
+                    final float y = MotionEventCompat.getY(ev, activePointerIndex);
+                    final int totalDelta = (int) (y - mInitialMotionY);
                     int nextPage = determineTargetPage(currentPage, pageOffset, initialVelocity,
                             totalDelta);
                     setCurrentItemInternal(nextPage, true, true, initialVelocity);
 
                     mActivePointerId = INVALID_POINTER;
                     endDrag();
-                    needsInvalidate = mLeftEdge.onRelease() | mRightEdge.onRelease();
+                    needsInvalidate = mTopEdge.onRelease() | mBottomEdge.onRelease();
                 }
                 break;
-
             case MotionEvent.ACTION_CANCEL:
-                if (DEBUG) Log.i(TAG, "T - CANCEL");
                 if (mIsBeingDragged) {
                     scrollToItem(mCurItem, true, 0, false);
                     mActivePointerId = INVALID_POINTER;
                     endDrag();
-                    needsInvalidate = mLeftEdge.onRelease() | mRightEdge.onRelease();
+                    needsInvalidate = mTopEdge.onRelease() | mBottomEdge.onRelease();
                 }
                 break;
-
-
             case MotionEventCompat.ACTION_POINTER_DOWN: {
-                if (DEBUG) Log.i(TAG, "T - POINTER DOWN");
                 final int index = MotionEventCompat.getActionIndex(ev);
-                final float x = MotionEventCompat.getX(ev, index);
-                mLastMotionX = x;
+                final float y = MotionEventCompat.getY(ev, index);
+                mLastMotionY = y;
                 mActivePointerId = MotionEventCompat.getPointerId(ev, index);
                 break;
             }
-
             case MotionEventCompat.ACTION_POINTER_UP:
-                if (DEBUG) Log.i(TAG, "T - POINTER UP");
                 onSecondaryPointerUp(ev);
-                mLastMotionX = MotionEventCompat.getX(ev,
+                mLastMotionY = MotionEventCompat.getY(ev,
                         MotionEventCompat.findPointerIndex(ev, mActivePointerId));
                 break;
         }
@@ -2083,64 +1952,64 @@ public class VerticalViewPager extends ViewGroup {
         }
     }
 
-    private boolean performDrag(float x) {
+    private boolean performDrag(float y) {
         boolean needsInvalidate = false;
 
-        final float deltaX = mLastMotionX - x;
-        mLastMotionX = x;
+        final float deltaY = mLastMotionY - y;
+        mLastMotionY = y;
 
-        float oldScrollX = getScrollX();
-        float scrollX = oldScrollX + deltaX;
-        final int width = getClientWidth();
+        float oldScrollY = getScrollY();
+        float scrollY = oldScrollY + deltaY;
+        final int height = getClientHeight();
 
-        float leftBound = width * mFirstOffset;
-        float rightBound = width * mLastOffset;
-        boolean leftAbsolute = true;
-        boolean rightAbsolute = true;
+        float topBound = height * mFirstOffset;
+        float bottomBound = height * mLastOffset;
+        boolean topAbsolute = true;
+        boolean bottomAbsolute = true;
 
         final ItemInfo firstItem = mItems.get(0);
         final ItemInfo lastItem = mItems.get(mItems.size() - 1);
         if (firstItem.position != 0) {
-            leftAbsolute = false;
-            leftBound = firstItem.offset * width;
+            topAbsolute = false;
+            topBound = firstItem.offset * height;
         }
         if (lastItem.position != mAdapter.getCount() - 1) {
-            rightAbsolute = false;
-            rightBound = lastItem.offset * width;
+            bottomAbsolute = false;
+            bottomBound = lastItem.offset * height;
         }
 
-        if (scrollX < leftBound) {
-            if (leftAbsolute) {
-                float over = leftBound - scrollX;
-                needsInvalidate = mLeftEdge.onPull(Math.abs(over) / width);
+        if (scrollY < topBound) {
+            if (topAbsolute) {
+                float over = topBound - scrollY;
+                needsInvalidate = mTopEdge.onPull(Math.abs(over) / height);
             }
-            scrollX = leftBound;
-        } else if (scrollX > rightBound) {
-            if (rightAbsolute) {
-                float over = scrollX - rightBound;
-                needsInvalidate = mRightEdge.onPull(Math.abs(over) / width);
+            scrollY = topBound;
+        } else if (scrollY > bottomBound) {
+            if (bottomAbsolute) {
+                float over = scrollY - bottomBound;
+                needsInvalidate = mBottomEdge.onPull(Math.abs(over) / height);
             }
-            scrollX = rightBound;
+            scrollY = bottomBound;
         }
         // Don't lose the rounded component
-        mLastMotionX += scrollX - (int) scrollX;
-        scrollTo((int) scrollX, getScrollY());
-        pageScrolled((int) scrollX);
+        mLastMotionX += scrollY - (int) scrollY;
+        scrollTo(getScrollX(), (int) scrollY);
+        pageScrolled((int) scrollY);
 
         return needsInvalidate;
     }
 
     /**
      * @return Info about the page at the current scroll position.
-     *         This can be synthetic for a missing middle page; the 'object' field can be null.
+     * This can be synthetic for a missing middle page; the 'object' field can be null.
      */
     private ItemInfo infoForCurrentScrollPosition() {
-        final int width = getClientWidth();
-        final float scrollOffset = width > 0 ? (float) getScrollX() / width : 0;
-        final float marginOffset = width > 0 ? (float) mPageMargin / width : 0;
+        final int height = getClientHeight();
+        final float scrollOffset = height > 0 ? (float) getScrollY() / height : 0;
+        final float marginOffset = height > 0 ? (float) mPageMargin / height : 0;
         int lastPos = -1;
         float lastOffset = 0.f;
-        float lastWidth = 0.f;
+        float lastHeight = 0.f;
         boolean first = true;
 
         ItemInfo lastItem = null;
@@ -2150,17 +2019,17 @@ public class VerticalViewPager extends ViewGroup {
             if (!first && ii.position != lastPos + 1) {
                 // Create a synthetic item for a missing page.
                 ii = mTempItem;
-                ii.offset = lastOffset + lastWidth + marginOffset;
+                ii.offset = lastOffset + lastHeight + marginOffset;
                 ii.position = lastPos + 1;
-                ii.widthFactor = mAdapter.getPageWidth(ii.position);
+                ii.heightFactor = mAdapter.getPageWidth(ii.position);
                 i--;
             }
             offset = ii.offset;
 
-            final float leftBound = offset;
-            final float rightBound = offset + ii.widthFactor + marginOffset;
-            if (first || scrollOffset >= leftBound) {
-                if (scrollOffset < rightBound || i == mItems.size() - 1) {
+            final float topBound = offset;
+            final float bottomBound = offset + ii.heightFactor + marginOffset;
+            if (first || scrollOffset >= topBound) {
+                if (scrollOffset < bottomBound || i == mItems.size() - 1) {
                     return ii;
                 }
             } else {
@@ -2169,16 +2038,16 @@ public class VerticalViewPager extends ViewGroup {
             first = false;
             lastPos = ii.position;
             lastOffset = offset;
-            lastWidth = ii.widthFactor;
+            lastHeight = ii.heightFactor;
             lastItem = ii;
         }
 
         return lastItem;
     }
 
-    private int determineTargetPage(int currentPage, float pageOffset, int velocity, int deltaX) {
+    private int determineTargetPage(int currentPage, float pageOffset, int velocity, int deltaY) {
         int targetPage;
-        if (Math.abs(deltaX) > mFlingDistance && Math.abs(velocity) > mMinimumVelocity) {
+        if (Math.abs(deltaY) > mFlingDistance && Math.abs(velocity) > mMinimumVelocity) {
             targetPage = velocity > 0 ? currentPage : currentPage + 1;
         } else {
             final float truncator = currentPage >= mCurItem ? 0.4f : 0.6f;
@@ -2205,31 +2074,30 @@ public class VerticalViewPager extends ViewGroup {
         if (overScrollMode == ViewCompat.OVER_SCROLL_ALWAYS ||
                 (overScrollMode == ViewCompat.OVER_SCROLL_IF_CONTENT_SCROLLS &&
                         mAdapter != null && mAdapter.getCount() > 1)) {
-            if (!mLeftEdge.isFinished()) {
+            if (!mTopEdge.isFinished()) {
                 final int restoreCount = canvas.save();
-                final int height = getHeight() - getPaddingTop() - getPaddingBottom();
-                final int width = getWidth();
+                final int height = getHeight();
+                final int width = getWidth() - getPaddingLeft() - getPaddingRight();
 
-                canvas.rotate(270);
-                canvas.translate(-height + getPaddingTop(), mFirstOffset * width);
-                mLeftEdge.setSize(height, width);
-                needsInvalidate |= mLeftEdge.draw(canvas);
+                canvas.translate(getPaddingLeft(), mFirstOffset * height);
+                mTopEdge.setSize(width, height);
+                needsInvalidate |= mTopEdge.draw(canvas);
                 canvas.restoreToCount(restoreCount);
             }
-            if (!mRightEdge.isFinished()) {
+            if (!mBottomEdge.isFinished()) {
                 final int restoreCount = canvas.save();
-                final int width = getWidth();
-                final int height = getHeight() - getPaddingTop() - getPaddingBottom();
+                final int height = getHeight();
+                final int width = getWidth() - getPaddingLeft() - getPaddingRight();
 
-                canvas.rotate(90);
-                canvas.translate(-getPaddingTop(), -(mLastOffset + 1) * width);
-                mRightEdge.setSize(height, width);
-                needsInvalidate |= mRightEdge.draw(canvas);
+                canvas.rotate(180);
+                canvas.translate(-width - getPaddingLeft(), -(mLastOffset + 1) * height);
+                mBottomEdge.setSize(width, height);
+                needsInvalidate |= mBottomEdge.draw(canvas);
                 canvas.restoreToCount(restoreCount);
             }
         } else {
-            mLeftEdge.finish();
-            mRightEdge.finish();
+            mTopEdge.finish();
+            mBottomEdge.finish();
         }
 
         if (needsInvalidate) {
@@ -2244,10 +2112,10 @@ public class VerticalViewPager extends ViewGroup {
 
         // Draw the margin drawable between pages if needed.
         if (mPageMargin > 0 && mMarginDrawable != null && mItems.size() > 0 && mAdapter != null) {
-            final int scrollX = getScrollX();
-            final int width = getWidth();
+            final int scrollY = getScrollY();
+            final int height = getHeight();
 
-            final float marginOffset = (float) mPageMargin / width;
+            final float marginOffset = (float) mPageMargin / height;
             int itemIndex = 0;
             ItemInfo ii = mItems.get(0);
             float offset = ii.offset;
@@ -2261,21 +2129,21 @@ public class VerticalViewPager extends ViewGroup {
 
                 float drawAt;
                 if (pos == ii.position) {
-                    drawAt = (ii.offset + ii.widthFactor) * width;
-                    offset = ii.offset + ii.widthFactor + marginOffset;
+                    drawAt = (ii.offset + ii.heightFactor) * height;
+                    offset = ii.offset + ii.heightFactor + marginOffset;
                 } else {
-                    float widthFactor = mAdapter.getPageWidth(pos);
-                    drawAt = (offset + widthFactor) * width;
-                    offset += widthFactor + marginOffset;
+                    float heightFactor = mAdapter.getPageWidth(pos);
+                    drawAt = (offset + heightFactor) * height;
+                    offset += heightFactor + marginOffset;
                 }
 
-                if (drawAt + mPageMargin > scrollX) {
-                    mMarginDrawable.setBounds((int) drawAt, mTopPageBounds,
-                            (int) (drawAt + mPageMargin + 0.5f), mBottomPageBounds);
+                if (drawAt + mPageMargin > scrollY) {
+                    mMarginDrawable.setBounds(mLeftPageBounds, (int) drawAt,
+                            mRightPageBounds, (int) (drawAt + mPageMargin + 0.5f));
                     mMarginDrawable.draw(canvas);
                 }
 
-                if (drawAt > scrollX + width) {
+                if (drawAt > scrollY + height) {
                     break; // No more visible, no sense in continuing
                 }
             }
@@ -2284,18 +2152,17 @@ public class VerticalViewPager extends ViewGroup {
 
     /**
      * Start a fake drag of the pager.
-     *
+     * <p/>
      * <p>A fake drag can be useful if you want to synchronize the motion of the ViewPager
      * with the touch scrolling of another view, while still letting the ViewPager
      * control the snapping motion and fling behavior. (e.g. parallax-scrolling tabs.)
      * Call {@link #fakeDragBy(float)} to simulate the actual drag motion. Call
      * {@link #endFakeDrag()} to complete the fake drag and fling as necessary.
-     *
+     * <p/>
      * <p>During a fake drag the ViewPager will ignore all touch events. If a real drag
      * is already in progress, this method will return false.
      *
      * @return true if the fake drag began successfully, false if it could not be started.
-     *
      * @see #fakeDragBy(float)
      * @see #endFakeDrag()
      */
@@ -2305,7 +2172,7 @@ public class VerticalViewPager extends ViewGroup {
         }
         mFakeDragging = true;
         setScrollState(SCROLL_STATE_DRAGGING);
-        mInitialMotionX = mLastMotionX = 0;
+        mInitialMotionY = mLastMotionY = 0;
         if (mVelocityTracker == null) {
             mVelocityTracker = VelocityTracker.obtain();
         } else {
@@ -2332,15 +2199,15 @@ public class VerticalViewPager extends ViewGroup {
 
         final VelocityTracker velocityTracker = mVelocityTracker;
         velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
-        int initialVelocity = (int) VelocityTrackerCompat.getXVelocity(
+        int initialVelocity = (int) VelocityTrackerCompat.getYVelocity(
                 velocityTracker, mActivePointerId);
         mPopulatePending = true;
-        final int width = getClientWidth();
-        final int scrollX = getScrollX();
+        final int height = getClientHeight();
+        final int scrollY = getScrollY();
         final ItemInfo ii = infoForCurrentScrollPosition();
         final int currentPage = ii.position;
-        final float pageOffset = (((float) scrollX / width) - ii.offset) / ii.widthFactor;
-        final int totalDelta = (int) (mLastMotionX - mInitialMotionX);
+        final float pageOffset = (((float) scrollY / height) - ii.offset) / ii.heightFactor;
+        final int totalDelta = (int) (mLastMotionY - mInitialMotionY);
         int nextPage = determineTargetPage(currentPage, pageOffset, initialVelocity,
                 totalDelta);
         setCurrentItemInternal(nextPage, true, true, initialVelocity);
@@ -2352,47 +2219,47 @@ public class VerticalViewPager extends ViewGroup {
     /**
      * Fake drag by an offset in pixels. You must have called {@link #beginFakeDrag()} first.
      *
-     * @param xOffset Offset in pixels to drag by.
+     * @param yOffset Offset in pixels to drag by.
      * @see #beginFakeDrag()
      * @see #endFakeDrag()
      */
-    public void fakeDragBy(float xOffset) {
+    public void fakeDragBy(float yOffset) {
         if (!mFakeDragging) {
             throw new IllegalStateException("No fake drag in progress. Call beginFakeDrag first.");
         }
 
-        mLastMotionX += xOffset;
+        mLastMotionY += yOffset;
 
-        float oldScrollX = getScrollX();
-        float scrollX = oldScrollX - xOffset;
-        final int width = getClientWidth();
+        float oldScrollY = getScrollY();
+        float scrollY = oldScrollY - yOffset;
+        final int height = getClientHeight();
 
-        float leftBound = width * mFirstOffset;
-        float rightBound = width * mLastOffset;
+        float topBound = height * mFirstOffset;
+        float bottomBound = height * mLastOffset;
 
         final ItemInfo firstItem = mItems.get(0);
         final ItemInfo lastItem = mItems.get(mItems.size() - 1);
         if (firstItem.position != 0) {
-            leftBound = firstItem.offset * width;
+            topBound = firstItem.offset * height;
         }
         if (lastItem.position != mAdapter.getCount() - 1) {
-            rightBound = lastItem.offset * width;
+            bottomBound = lastItem.offset * height;
         }
 
-        if (scrollX < leftBound) {
-            scrollX = leftBound;
-        } else if (scrollX > rightBound) {
-            scrollX = rightBound;
+        if (scrollY < topBound) {
+            scrollY = topBound;
+        } else if (scrollY > bottomBound) {
+            scrollY = bottomBound;
         }
         // Don't lose the rounded component
-        mLastMotionX += scrollX - (int) scrollX;
-        scrollTo((int) scrollX, getScrollY());
-        pageScrolled((int) scrollX);
+        mLastMotionY += scrollY - (int) scrollY;
+        scrollTo(getScrollX(), (int) scrollY);
+        pageScrolled((int) scrollY);
 
         // Synthesize an event for the VelocityTracker.
         final long time = SystemClock.uptimeMillis();
         final MotionEvent ev = MotionEvent.obtain(mFakeDragBeginTime, time, MotionEvent.ACTION_MOVE,
-                mLastMotionX, 0, 0);
+                0, mLastMotionY, 0);
         mVelocityTracker.addMovement(ev);
         ev.recycle();
     }
@@ -2401,7 +2268,6 @@ public class VerticalViewPager extends ViewGroup {
      * Returns true if a fake drag is in progress.
      *
      * @return true if currently in a fake drag, false otherwise.
-     *
      * @see #beginFakeDrag()
      * @see #fakeDragBy(float)
      * @see #endFakeDrag()
@@ -2417,7 +2283,7 @@ public class VerticalViewPager extends ViewGroup {
             // This was our active pointer going up. Choose a new
             // active pointer and adjust accordingly.
             final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-            mLastMotionX = MotionEventCompat.getX(ev, newPointerIndex);
+            mLastMotionY = MotionEventCompat.getY(ev, newPointerIndex);
             mActivePointerId = MotionEventCompat.getPointerId(ev, newPointerIndex);
             if (mVelocityTracker != null) {
                 mVelocityTracker.clear();
@@ -2450,17 +2316,17 @@ public class VerticalViewPager extends ViewGroup {
         }
     }
 
-    public boolean canScrollHorizontally(int direction) {
+    public boolean internalCanScrollVertically(int direction) {
         if (mAdapter == null) {
             return false;
         }
 
-        final int width = getClientWidth();
-        final int scrollX = getScrollX();
+        final int height = getClientHeight();
+        final int scrollY = getScrollY();
         if (direction < 0) {
-            return (scrollX > (int) (width * mFirstOffset));
+            return (scrollY > (int) (height * mFirstOffset));
         } else if (direction > 0) {
-            return (scrollX < (int) (width * mLastOffset));
+            return (scrollY < (int) (height * mLastOffset));
         } else {
             return false;
         }
@@ -2469,46 +2335,36 @@ public class VerticalViewPager extends ViewGroup {
     /**
      * Tests scrollability within child views of v given a delta of dx.
      *
-     * @param v View to test for horizontal scrollability
+     * @param v      View to test for horizontal scrollability
      * @param checkV Whether the view v passed should itself be checked for scrollability (true),
      *               or just its children (false).
-     * @param dx Delta scrolled in pixels
-     * @param x X coordinate of the active touch point
-     * @param y Y coordinate of the active touch point
+     * @param dy     Delta scrolled in pixels
+     * @param x      X coordinate of the active touch point
+     * @param y      Y coordinate of the active touch point
      * @return true if child views of v can be scrolled by delta of dx.
      */
-    protected boolean canScrollSuper(View v, boolean checkV, int dx, int x, int y) {
+    protected boolean canScroll(View v, boolean checkV, int dy, int x, int y) {
         if (v instanceof ViewGroup) {
-
             final ViewGroup group = (ViewGroup) v;
-            final int scrollY = v.getScrollX();
-            final int scrollX = v.getScrollY();
+            final int scrollX = v.getScrollX();
+            final int scrollY = v.getScrollY();
             final int count = group.getChildCount();
             // Count backwards - let topmost views consume scroll distance first.
             for (int i = count - 1; i >= 0; i--) {
+                // TODO: Add versioned support here for transformed views.
                 // This will not work for transformed views in Honeycomb+
                 final View child = group.getChildAt(i);
-//                if (x + scrollX >= child.getLeft() && x + scrollX < child.getRight() &&
-//                        y + scrollY >= child.getTop() && y + scrollY < child.getBottom() &&
-//                        canScrollSuper(child, true, dx, x + scrollX - child.getLeft(),
-//                                y + scrollY - child.getTop())) {
-                if (x + scrollX >= child.getTop() && x + scrollX < child.getBottom() &&
-                        y + scrollY >= child.getLeft() && y + scrollY < child.getRight() &&
-                        canScrollSuper(child, true, dx, x + scrollX - child.getTop(),
-                                y + scrollY - child.getLeft())) {
+                if (y + scrollY >= child.getTop() && y + scrollY < child.getBottom() &&
+                        x + scrollX >= child.getLeft() && x + scrollX < child.getRight() &&
+                        canScroll(child, true, dy, x + scrollX - child.getLeft(),
+                                y + scrollY - child.getTop())) {
                     return true;
                 }
             }
         }
 
-        return checkV && ViewCompat.canScrollHorizontally(v, -dx);
+        return checkV && ViewCompat.canScrollVertically(v, -dy);
     }
-
-
-    protected boolean canScroll(View v, boolean checkV, int dx, int x, int y) {
-        return canScrollSuper(v, checkV, dx, x, y);
-    }
-
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -2582,33 +2438,33 @@ public class VerticalViewPager extends ViewGroup {
         View nextFocused = FocusFinder.getInstance().findNextFocus(this, currentFocused,
                 direction);
         if (nextFocused != null && nextFocused != currentFocused) {
-            if (direction == View.FOCUS_LEFT) {
+            if (direction == View.FOCUS_UP) {
                 // If there is nothing to the left, or this is causing us to
                 // jump to the right, then what we really want to do is page left.
-                final int nextLeft = getChildRectInPagerCoordinates(mTempRect, nextFocused).left;
-                final int currLeft = getChildRectInPagerCoordinates(mTempRect, currentFocused).left;
-                if (currentFocused != null && nextLeft >= currLeft) {
-                    handled = pageLeft();
+                final int nextTop = getChildRectInPagerCoordinates(mTempRect, nextFocused).top;
+                final int currTop = getChildRectInPagerCoordinates(mTempRect, currentFocused).top;
+                if (currentFocused != null && nextTop >= currTop) {
+                    handled = pageUp();
                 } else {
                     handled = nextFocused.requestFocus();
                 }
-            } else if (direction == View.FOCUS_RIGHT) {
+            } else if (direction == View.FOCUS_DOWN) {
                 // If there is nothing to the right, or this is causing us to
                 // jump to the left, then what we really want to do is page right.
-                final int nextLeft = getChildRectInPagerCoordinates(mTempRect, nextFocused).left;
-                final int currLeft = getChildRectInPagerCoordinates(mTempRect, currentFocused).left;
-                if (currentFocused != null && nextLeft <= currLeft) {
-                    handled = pageRight();
+                final int nextDown = getChildRectInPagerCoordinates(mTempRect, nextFocused).bottom;
+                final int currDown = getChildRectInPagerCoordinates(mTempRect, currentFocused).bottom;
+                if (currentFocused != null && nextDown <= currDown) {
+                    handled = pageDown();
                 } else {
                     handled = nextFocused.requestFocus();
                 }
             }
-        } else if (direction == FOCUS_LEFT || direction == FOCUS_BACKWARD) {
+        } else if (direction == FOCUS_UP || direction == FOCUS_BACKWARD) {
             // Trying to move left and nothing there; try to page.
-            handled = pageLeft();
-        } else if (direction == FOCUS_RIGHT || direction == FOCUS_FORWARD) {
+            handled = pageUp();
+        } else if (direction == FOCUS_DOWN || direction == FOCUS_FORWARD) {
             // Trying to move right and nothing there; try to page.
-            handled = pageRight();
+            handled = pageDown();
         }
         if (handled) {
             playSoundEffect(SoundEffectConstants.getContantForFocusDirection(direction));
@@ -2642,17 +2498,17 @@ public class VerticalViewPager extends ViewGroup {
         return outRect;
     }
 
-    boolean pageLeft() {
+    boolean pageUp() {
         if (mCurItem > 0) {
-            setCurrentItem(mCurItem-1, true);
+            setCurrentItem(mCurItem - 1, true);
             return true;
         }
         return false;
     }
 
-    boolean pageRight() {
-        if (mAdapter != null && mCurItem < (mAdapter.getCount()-1)) {
-            setCurrentItem(mCurItem+1, true);
+    boolean pageDown() {
+        if (mAdapter != null && mCurItem < (mAdapter.getCount() - 1)) {
+            setCurrentItem(mCurItem + 1, true);
             return true;
         }
         return false;
@@ -2802,7 +2658,7 @@ public class VerticalViewPager extends ViewGroup {
         @Override
         public void onInitializeAccessibilityEvent(View host, AccessibilityEvent event) {
             super.onInitializeAccessibilityEvent(host, event);
-            event.setClassName(VerticalViewPager.class.getName());
+            event.setClassName(ViewPager.class.getName());
             final AccessibilityRecordCompat recordCompat = AccessibilityRecordCompat.obtain();
             recordCompat.setScrollable(canScroll());
             if (event.getEventType() == AccessibilityEventCompat.TYPE_VIEW_SCROLLED
@@ -2816,12 +2672,12 @@ public class VerticalViewPager extends ViewGroup {
         @Override
         public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfoCompat info) {
             super.onInitializeAccessibilityNodeInfo(host, info);
-            info.setClassName(VerticalViewPager.class.getName());
+            info.setClassName(ViewPager.class.getName());
             info.setScrollable(canScroll());
-            if (canScrollHorizontally(1)) {
+            if (internalCanScrollVertically(1)) {
                 info.addAction(AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD);
             }
-            if (canScrollHorizontally(-1)) {
+            if (internalCanScrollVertically(-1)) {
                 info.addAction(AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD);
             }
         }
@@ -2833,17 +2689,19 @@ public class VerticalViewPager extends ViewGroup {
             }
             switch (action) {
                 case AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD: {
-                    if (canScrollHorizontally(1)) {
+                    if (internalCanScrollVertically(1)) {
                         setCurrentItem(mCurItem + 1);
                         return true;
                     }
-                } return false;
+                }
+                return false;
                 case AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD: {
-                    if (canScrollHorizontally(-1)) {
+                    if (internalCanScrollVertically(-1)) {
                         setCurrentItem(mCurItem - 1);
                         return true;
                     }
-                } return false;
+                }
+                return false;
             }
             return false;
         }
@@ -2858,6 +2716,7 @@ public class VerticalViewPager extends ViewGroup {
         public void onChanged() {
             dataSetChanged();
         }
+
         @Override
         public void onInvalidated() {
             dataSetChanged();
@@ -2878,14 +2737,14 @@ public class VerticalViewPager extends ViewGroup {
         /**
          * Gravity setting for use on decor views only:
          * Where to position the view page within the overall ViewPager
-         * container; constants are defined in {@link Gravity}.
+         * container; constants are defined in {@link android.view.Gravity}.
          */
         public int gravity;
 
         /**
          * Width as a 0-1 multiplier of the measured pager width
          */
-        float widthFactor = 0.f;
+        float heightFactor = 0.f;
 
         /**
          * true if this view was added during layout and needs to be measured
@@ -2926,29 +2785,5 @@ public class VerticalViewPager extends ViewGroup {
             }
             return llp.position - rlp.position;
         }
-    }
-
-    private class VerticalPageTransformer implements PageTransformer{
-        public void transformPage(View view, float position){
-            int pageWidth = view.getWidth();
-            int pageHeight = view.getHeight();
-
-            if(position < -1){ // [-Infinity,-1)
-                view.setAlpha(0);
-            }else if(position <= 1){ // [-1,1]
-                view.setAlpha(1);
-                view.setTranslationX(pageWidth * -position);
-                float yPosition = position * pageHeight;
-                view.setTranslationY(yPosition);
-            }
-        }
-    }
-
-    private ZoomOutTransformer pageTransformer;
-
-    private void init(){
-        pageTransformer = new ZoomOutTransformer();
-        setPageTransformer(true, pageTransformer);
-        setOverScrollMode(OVER_SCROLL_NEVER);
     }
 }

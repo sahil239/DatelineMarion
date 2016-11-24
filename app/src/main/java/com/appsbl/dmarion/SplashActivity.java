@@ -87,7 +87,9 @@ public class SplashActivity extends AppCompatActivity {
     void openOrCreateDatabase(){
 
         database = openOrCreateDatabase(Constants.databaseName, MODE_PRIVATE, null);
-        database.execSQL("create table if not exists "+Constants.newsTable +" (category_name text, title text, description text" +
+        database.execSQL("create table if not exists "+Constants.newsTable +" (category_name text" +
+                ", title text" +
+                ", description text" +
                 ", image_url text" +
                 ", article_id text" +
                 ", detail_description_url text" +
